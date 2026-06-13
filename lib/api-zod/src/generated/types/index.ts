@@ -12,6 +12,7 @@ export * from './bookDetailStatus';
 export * from './bookEbookStatus';
 export * from './bookHardcoverStatus';
 export * from './bookPaperbackStatus';
+export * from './bookshelfScanResult';
 export * from './bookStatus';
 export * from './dashboardStats';
 export * from './errorResponse';

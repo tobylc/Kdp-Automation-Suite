@@ -29,10 +29,14 @@ export const ListBooksResponseItem = zod.object({
   "coverPngUrl": zod.string().nullish(),
   "kdpContentUrl": zod.string().nullish(),
   "discoveredAt": zod.coerce.date(),
-  "status": zod.enum(['discovered', 'downloading', 'ready', 'uploading', 'completed', 'failed']),
+  "status": zod.enum(['discovered', 'downloading', 'ready', 'uploading', 'completed', 'failed', 'live', 'partial']),
   "ebookStatus": zod.union([zod.literal('pending'),zod.literal('running'),zod.literal('completed'),zod.literal('failed'),zod.literal(null)]).nullable(),
   "paperbackStatus": zod.union([zod.literal('pending'),zod.literal('running'),zod.literal('completed'),zod.literal('failed'),zod.literal(null)]).nullable(),
-  "hardcoverStatus": zod.union([zod.literal('pending'),zod.literal('running'),zod.literal('completed'),zod.literal('failed'),zod.literal(null)]).nullable()
+  "hardcoverStatus": zod.union([zod.literal('pending'),zod.literal('running'),zod.literal('completed'),zod.literal('failed'),zod.literal(null)]).nullable(),
+  "ebookKdpStatus": zod.string().nullish().describe('Live KDP bookshelf status for the eBook format'),
+  "paperbackKdpStatus": zod.string().nullish().describe('Live KDP bookshelf status for the Paperback format'),
+  "hardcoverKdpStatus": zod.string().nullish().describe('Live KDP bookshelf status for the Hardcover format'),
+  "lastBookshelfScanAt": zod.coerce.date().nullish().describe('When this book was last seen on the KDP bookshelf')
 })
 export const ListBooksResponse = zod.array(ListBooksResponseItem)
 
@@ -44,6 +48,18 @@ export const ListBooksResponse = zod.array(ListBooksResponseItem)
 export const ScanForBooksResponse = zod.object({
   "newBooks": zod.number(),
   "totalFound": zod.number(),
+  "message": zod.string()
+})
+
+
+/**
+ * Navigates the KDP bookshelf using a Playwright browser, reads the live/pending/draft status of every title across all paginated pages, and updates the database so the automation knows which books are already live and should not be re-uploaded.
+
+ * @summary Scan Amazon KDP bookshelf and sync live statuses
+ */
+export const ScanKdpBookshelfResponse = zod.object({
+  "scanned": zod.number().describe('Number of KDP title entries found across all bookshelf pages'),
+  "updated": zod.number().describe('Number of books in the DB whose KDP status was updated'),
   "message": zod.string()
 })
 
@@ -65,7 +81,11 @@ export const GetBookResponse = zod.object({
   "kdpContentUrl": zod.string().nullish(),
   "kdpContent": zod.string().nullish(),
   "discoveredAt": zod.coerce.date(),
-  "status": zod.enum(['discovered', 'downloading', 'ready', 'uploading', 'completed', 'failed']),
+  "status": zod.enum(['discovered', 'downloading', 'ready', 'uploading', 'completed', 'failed', 'live', 'partial']),
+  "ebookKdpStatus": zod.string().nullish(),
+  "paperbackKdpStatus": zod.string().nullish(),
+  "hardcoverKdpStatus": zod.string().nullish(),
+  "lastBookshelfScanAt": zod.coerce.date().nullish(),
   "jobs": zod.array(zod.object({
   "id": zod.number(),
   "bookId": zod.number(),
@@ -211,12 +231,14 @@ export const GetStatsResponse = zod.object({
   "booksReady": zod.number(),
   "booksCompleted": zod.number(),
   "booksFailed": zod.number(),
+  "booksLiveOnKdp": zod.number().describe('Books confirmed fully live on KDP (all 3 formats live)'),
   "totalJobs": zod.number(),
   "jobsPending": zod.number(),
   "jobsRunning": zod.number(),
   "jobsCompleted": zod.number(),
   "jobsFailed": zod.number(),
-  "lastScanAt": zod.coerce.date().nullable()
+  "lastScanAt": zod.coerce.date().nullable(),
+  "lastBookshelfScanAt": zod.coerce.date().nullable().describe('When the KDP bookshelf was last scanned')
 })
 
 

@@ -47,7 +47,7 @@ fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 let browserInstance: Browser | null = null;
 let browserContext: BrowserContext | null = null;
 
-async function getBrowser(): Promise<{ browser: Browser; context: BrowserContext }> {
+export async function getBrowser(): Promise<{ browser: Browser; context: BrowserContext }> {
   if (!browserInstance || !browserInstance.isConnected()) {
     logger.info("Launching Playwright browser");
     browserInstance = await chromium.launch({

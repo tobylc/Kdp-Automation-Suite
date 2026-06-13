@@ -16,4 +16,6 @@ export const BookDetailStatus = {
   uploading: 'uploading',
   completed: 'completed',
   failed: 'failed',
+  live: 'live',
+  partial: 'partial',
 } as const;

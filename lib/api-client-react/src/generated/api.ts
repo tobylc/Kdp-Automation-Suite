@@ -22,6 +22,7 @@ import type {
 import type {
   Book,
   BookDetail,
+  BookshelfScanResult,
   DashboardStats,
   ErrorResponse,
   HealthStatus,
@@ -270,6 +271,78 @@ export const useScanForBooks = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getScanForBooksMutationOptions(options));
+    }
+
+export const getScanKdpBookshelfUrl = () => {
+
+
+
+
+  return `/api/books/bookshelf-scan`
+}
+
+/**
+ * Navigates the KDP bookshelf using a Playwright browser, reads the live/pending/draft status of every title across all paginated pages, and updates the database so the automation knows which books are already live and should not be re-uploaded.
+
+ * @summary Scan Amazon KDP bookshelf and sync live statuses
+ */
+export const scanKdpBookshelf = async ( options?: RequestInit): Promise<BookshelfScanResult> => {
+
+  return customFetch<BookshelfScanResult>(getScanKdpBookshelfUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getScanKdpBookshelfMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanKdpBookshelf>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof scanKdpBookshelf>>, TError,void, TContext> => {
+
+const mutationKey = ['scanKdpBookshelf'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof scanKdpBookshelf>>, void> = () => {
+
+
+          return  scanKdpBookshelf(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ScanKdpBookshelfMutationResult = NonNullable<Awaited<ReturnType<typeof scanKdpBookshelf>>>
+
+    export type ScanKdpBookshelfMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Scan Amazon KDP bookshelf and sync live statuses
+ */
+export const useScanKdpBookshelf = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanKdpBookshelf>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof scanKdpBookshelf>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getScanKdpBookshelfMutationOptions(options));
     }
 
 export const getGetBookUrl = (id: number,) => {

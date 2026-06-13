@@ -14,6 +14,11 @@ export const booksTable = pgTable(
     kdpContentUrl: text("kdp_content_url"),
     kdpContent: text("kdp_content"),
     status: text("status").notNull().default("discovered"),
+    // KDP Bookshelf statuses per format — set by the bookshelf scanner
+    ebookKdpStatus: text("ebook_kdp_status"),
+    paperbackKdpStatus: text("paperback_kdp_status"),
+    hardcoverKdpStatus: text("hardcover_kdp_status"),
+    lastBookshelfScanAt: timestamp("last_bookshelf_scan_at"),
     discoveredAt: timestamp("discovered_at").notNull().defaultNow(),
   },
   (table) => [

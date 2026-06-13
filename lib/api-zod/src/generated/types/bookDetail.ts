@@ -25,5 +25,13 @@ export interface BookDetail {
   kdpContent?: string | null;
   discoveredAt: Date;
   status: BookDetailStatus;
+  /** @nullable */
+  ebookKdpStatus?: string | null;
+  /** @nullable */
+  paperbackKdpStatus?: string | null;
+  /** @nullable */
+  hardcoverKdpStatus?: string | null;
+  /** @nullable */
+  lastBookshelfScanAt?: Date | null;
   jobs: UploadJobDetail[];
 }

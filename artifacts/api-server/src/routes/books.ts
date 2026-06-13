@@ -5,8 +5,10 @@ import {
   ListBooksResponse,
   GetBookParams,
   ScanForBooksResponse,
+  ScanKdpBookshelfResponse,
 } from "@workspace/api-zod";
 import { scanForNewBooks } from "../lib/book-scanner";
+import { scanKdpBookshelf } from "../lib/kdp-bookshelf-scanner";
 
 const router = Router();
 
@@ -16,7 +18,6 @@ router.get("/books", async (req, res): Promise<void> => {
     .from(booksTable)
     .orderBy(desc(booksTable.discoveredAt));
 
-  // Get all jobs to compute per-format status
   const allJobs = await db.select().from(uploadJobsTable);
 
   const result = books.map((book) => {
@@ -38,6 +39,10 @@ router.get("/books", async (req, res): Promise<void> => {
       ebookStatus: ebookJob?.status ?? null,
       paperbackStatus: paperbackJob?.status ?? null,
       hardcoverStatus: hardcoverJob?.status ?? null,
+      ebookKdpStatus: book.ebookKdpStatus ?? null,
+      paperbackKdpStatus: book.paperbackKdpStatus ?? null,
+      hardcoverKdpStatus: book.hardcoverKdpStatus ?? null,
+      lastBookshelfScanAt: book.lastBookshelfScanAt?.toISOString() ?? null,
     };
   });
 
@@ -50,11 +55,22 @@ router.post("/books/scan", async (req, res): Promise<void> => {
     ScanForBooksResponse.parse({
       newBooks: result.newBooks,
       totalFound: result.totalFound,
-      message: result.newBooks > 0
-        ? `Found ${result.totalFound} books, ${result.newBooks} new titles queued for upload`
-        : `Found ${result.totalFound} books — no new titles`,
+      message:
+        result.newBooks > 0
+          ? `Found ${result.totalFound} books, ${result.newBooks} new titles queued for upload`
+          : `Found ${result.totalFound} books — no new titles`,
     }),
   );
+});
+
+router.post("/books/bookshelf-scan", async (req, res): Promise<void> => {
+  try {
+    const result = await scanKdpBookshelf();
+    res.json(ScanKdpBookshelfResponse.parse(result));
+  } catch (err) {
+    req.log.error({ err }, "KDP bookshelf scan failed");
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 router.get("/books/:id", async (req, res): Promise<void> => {
@@ -123,6 +139,10 @@ router.get("/books/:id", async (req, res): Promise<void> => {
     kdpContent: book.kdpContent,
     discoveredAt: book.discoveredAt.toISOString(),
     status: book.status,
+    ebookKdpStatus: book.ebookKdpStatus ?? null,
+    paperbackKdpStatus: book.paperbackKdpStatus ?? null,
+    hardcoverKdpStatus: book.hardcoverKdpStatus ?? null,
+    lastBookshelfScanAt: book.lastBookshelfScanAt?.toISOString() ?? null,
     jobs: jobsWithLogs,
   });
 });

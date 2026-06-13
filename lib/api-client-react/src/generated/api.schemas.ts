@@ -23,6 +23,8 @@ export const BookStatus = {
   uploading: 'uploading',
   completed: 'completed',
   failed: 'failed',
+  live: 'live',
+  partial: 'partial',
 } as const;
 
 /**
@@ -85,6 +87,26 @@ export interface Book {
   paperbackStatus: BookPaperbackStatus;
   /** @nullable */
   hardcoverStatus: BookHardcoverStatus;
+  /**
+     * Live KDP bookshelf status for the eBook format
+     * @nullable
+     */
+  ebookKdpStatus?: string | null;
+  /**
+     * Live KDP bookshelf status for the Paperback format
+     * @nullable
+     */
+  paperbackKdpStatus?: string | null;
+  /**
+     * Live KDP bookshelf status for the Hardcover format
+     * @nullable
+     */
+  hardcoverKdpStatus?: string | null;
+  /**
+     * When this book was last seen on the KDP bookshelf
+     * @nullable
+     */
+  lastBookshelfScanAt?: string | null;
 }
 
 export type BookDetailStatus = typeof BookDetailStatus[keyof typeof BookDetailStatus];
@@ -97,6 +119,8 @@ export const BookDetailStatus = {
   uploading: 'uploading',
   completed: 'completed',
   failed: 'failed',
+  live: 'live',
+  partial: 'partial',
 } as const;
 
 export type UploadJobDetailFormat = typeof UploadJobDetailFormat[keyof typeof UploadJobDetailFormat];
@@ -173,6 +197,14 @@ export interface BookDetail {
   kdpContent?: string | null;
   discoveredAt: string;
   status: BookDetailStatus;
+  /** @nullable */
+  ebookKdpStatus?: string | null;
+  /** @nullable */
+  paperbackKdpStatus?: string | null;
+  /** @nullable */
+  hardcoverKdpStatus?: string | null;
+  /** @nullable */
+  lastBookshelfScanAt?: string | null;
   jobs: UploadJobDetail[];
 }
 
@@ -218,6 +250,14 @@ export interface ScanResult {
   message: string;
 }
 
+export interface BookshelfScanResult {
+  /** Number of KDP title entries found across all bookshelf pages */
+  scanned: number;
+  /** Number of books in the DB whose KDP status was updated */
+  updated: number;
+  message: string;
+}
+
 export interface RunAllResult {
   queued: number;
   message: string;
@@ -244,6 +284,8 @@ export interface DashboardStats {
   booksReady: number;
   booksCompleted: number;
   booksFailed: number;
+  /** Books confirmed fully live on KDP (all 3 formats live) */
+  booksLiveOnKdp: number;
   totalJobs: number;
   jobsPending: number;
   jobsRunning: number;
@@ -251,6 +293,11 @@ export interface DashboardStats {
   jobsFailed: number;
   /** @nullable */
   lastScanAt: string | null;
+  /**
+     * When the KDP bookshelf was last scanned
+     * @nullable
+     */
+  lastBookshelfScanAt: string | null;
 }
 
 export type ListJobsParams = {

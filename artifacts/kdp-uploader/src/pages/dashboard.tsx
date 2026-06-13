@@ -6,6 +6,7 @@ import {
   useScanForBooks,
   useRunAllJobs,
   useGetSchedule,
+  useScanKdpBookshelf,
   getGetStatsQueryKey,
   getListJobsQueryKey,
   getListBooksQueryKey
@@ -16,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FormatBadge } from "@/components/format-badge";
 import { StatusBadge } from "@/components/status-badge";
-import { RefreshCw, Play, Library, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { RefreshCw, Play, Library, CheckCircle2, Clock, AlertTriangle, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function Dashboard() {
@@ -39,19 +40,25 @@ export default function Dashboard() {
   const scanMutation = useScanForBooks({
     mutation: {
       onSuccess: (data) => {
-        toast({
-          title: "Scan Complete",
-          description: data.message,
-        });
+        toast({ title: "Scan Complete", description: data.message });
         queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
       },
       onError: (error) => {
-        toast({
-          title: "Scan Failed",
-          description: error.error,
-          variant: "destructive",
-        });
+        toast({ title: "Scan Failed", description: (error as any).error ?? "Scan failed", variant: "destructive" });
+      }
+    }
+  });
+
+  const bookshelfScanMutation = useScanKdpBookshelf({
+    mutation: {
+      onSuccess: (data) => {
+        toast({ title: "KDP Bookshelf Scanned", description: data.message });
+        queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
+      },
+      onError: (error) => {
+        toast({ title: "Bookshelf Scan Failed", description: (error as any).error ?? "Scan failed", variant: "destructive" });
       }
     }
   });
@@ -59,10 +66,7 @@ export default function Dashboard() {
   const runAllMutation = useRunAllJobs({
     mutation: {
       onSuccess: (data) => {
-        toast({
-          title: "Jobs Queued",
-          description: data.message,
-        });
+        toast({ title: "Jobs Queued", description: data.message });
         queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
       }
@@ -76,24 +80,35 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold tracking-tight">Mission Control</h1>
           <p className="text-muted-foreground mt-1">Real-time KDP upload automation status</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {schedule && (
             <Badge variant="outline" className="h-9 px-3 gap-2 border-border text-sm font-normal">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              Schedule: {schedule.enabled ? <span className="text-green-600 font-medium">Active</span> : <span className="text-muted-foreground">Disabled</span>}
+              Schedule: {schedule.enabled
+                ? <span className="text-green-600 font-medium">Active</span>
+                : <span className="text-muted-foreground">Disabled</span>}
             </Badge>
           )}
-          <Button 
-            variant="outline" 
-            onClick={() => scanMutation.mutate()} 
+          <Button
+            variant="outline"
+            onClick={() => bookshelfScanMutation.mutate()}
+            disabled={bookshelfScanMutation.isPending}
+            className="font-mono text-sm border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+          >
+            <Sparkles className={`mr-2 h-4 w-4 ${bookshelfScanMutation.isPending ? 'animate-pulse' : ''}`} />
+            KDP_SHELF
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => scanMutation.mutate()}
             disabled={scanMutation.isPending}
             className="font-mono text-sm"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
             SCAN_NOW
           </Button>
-          <Button 
-            onClick={() => runAllMutation.mutate()} 
+          <Button
+            onClick={() => runAllMutation.mutate()}
             disabled={runAllMutation.isPending || stats?.jobsPending === 0}
             className="font-mono text-sm bg-primary text-primary-foreground hover:bg-primary/90"
           >
@@ -103,7 +118,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Books</CardTitle>
@@ -116,6 +131,20 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+
+        <Card className="shadow-sm border-emerald-200 bg-emerald-50/40">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-emerald-700">Live on KDP</CardTitle>
+            <Sparkles className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-emerald-700">{stats?.booksLiveOnKdp || 0}</div>
+            <p className="text-xs text-emerald-600 mt-1">
+              All 3 formats confirmed live
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Pending Jobs</CardTitle>
@@ -128,6 +157,7 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
@@ -138,6 +168,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Successful uploads</p>
           </CardContent>
         </Card>
+
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Failed</CardTitle>
@@ -149,6 +180,13 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {stats?.lastBookshelfScanAt && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Sparkles className="h-3 w-3 text-emerald-500" />
+          KDP bookshelf last scanned {formatDistanceToNow(new Date(stats.lastBookshelfScanAt), { addSuffix: true })}
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">

@@ -11,6 +11,8 @@ export interface DashboardStats {
   booksReady: number;
   booksCompleted: number;
   booksFailed: number;
+  /** Books confirmed fully live on KDP (all 3 formats live) */
+  booksLiveOnKdp: number;
   totalJobs: number;
   jobsPending: number;
   jobsRunning: number;
@@ -18,4 +20,9 @@ export interface DashboardStats {
   jobsFailed: number;
   /** @nullable */
   lastScanAt: Date | null;
+  /**
+     * When the KDP bookshelf was last scanned
+     * @nullable
+     */
+  lastBookshelfScanAt: Date | null;
 }

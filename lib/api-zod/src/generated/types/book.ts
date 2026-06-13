@@ -31,4 +31,24 @@ export interface Book {
   paperbackStatus: BookPaperbackStatus;
   /** @nullable */
   hardcoverStatus: BookHardcoverStatus;
+  /**
+     * Live KDP bookshelf status for the eBook format
+     * @nullable
+     */
+  ebookKdpStatus?: string | null;
+  /**
+     * Live KDP bookshelf status for the Paperback format
+     * @nullable
+     */
+  paperbackKdpStatus?: string | null;
+  /**
+     * Live KDP bookshelf status for the Hardcover format
+     * @nullable
+     */
+  hardcoverKdpStatus?: string | null;
+  /**
+     * When this book was last seen on the KDP bookshelf
+     * @nullable
+     */
+  lastBookshelfScanAt?: Date | null;
 }

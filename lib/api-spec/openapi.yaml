@@ -63,6 +63,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScanResult"
 
+  /books/bookshelf-scan:
+    post:
+      operationId: scanKdpBookshelf
+      tags: [books]
+      summary: Scan Amazon KDP bookshelf and sync live statuses
+      description: >
+        Navigates the KDP bookshelf using a Playwright browser, reads the live/pending/draft
+        status of every title across all paginated pages, and updates the database so the
+        automation knows which books are already live and should not be re-uploaded.
+      responses:
+        "200":
+          description: Bookshelf scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookshelfScanResult"
+        "500":
+          description: Scan failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /books/{id}:
     get:
       operationId: getBook
@@ -266,7 +289,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [discovered, downloading, ready, uploading, completed, failed]
+          enum: [discovered, downloading, ready, uploading, completed, failed, live, partial]
         ebookStatus:
           type: ["string", "null"]
           enum: [pending, running, completed, failed, null]
@@ -276,6 +299,19 @@ components:
         hardcoverStatus:
           type: ["string", "null"]
           enum: [pending, running, completed, failed, null]
+        ebookKdpStatus:
+          type: ["string", "null"]
+          description: Live KDP bookshelf status for the eBook format
+        paperbackKdpStatus:
+          type: ["string", "null"]
+          description: Live KDP bookshelf status for the Paperback format
+        hardcoverKdpStatus:
+          type: ["string", "null"]
+          description: Live KDP bookshelf status for the Hardcover format
+        lastBookshelfScanAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When this book was last seen on the KDP bookshelf
 
     BookDetail:
       type: object
@@ -302,7 +338,16 @@ components:
           format: date-time
         status:
           type: string
-          enum: [discovered, downloading, ready, uploading, completed, failed]
+          enum: [discovered, downloading, ready, uploading, completed, failed, live, partial]
+        ebookKdpStatus:
+          type: ["string", "null"]
+        paperbackKdpStatus:
+          type: ["string", "null"]
+        hardcoverKdpStatus:
+          type: ["string", "null"]
+        lastBookshelfScanAt:
+          type: ["string", "null"]
+          format: date-time
         jobs:
           type: array
           items:
@@ -402,6 +447,19 @@ components:
         message:
           type: string
 
+    BookshelfScanResult:
+      type: object
+      required: [scanned, updated, message]
+      properties:
+        scanned:
+          type: integer
+          description: Number of KDP title entries found across all bookshelf pages
+        updated:
+          type: integer
+          description: Number of books in the DB whose KDP status was updated
+        message:
+          type: string
+
     RunAllResult:
       type: object
       required: [queued, message]
@@ -441,7 +499,7 @@ components:
 
     DashboardStats:
       type: object
-      required: [totalBooks, booksReady, booksCompleted, booksFailed, totalJobs, jobsPending, jobsRunning, jobsCompleted, jobsFailed, lastScanAt]
+      required: [totalBooks, booksReady, booksCompleted, booksFailed, booksLiveOnKdp, totalJobs, jobsPending, jobsRunning, jobsCompleted, jobsFailed, lastScanAt, lastBookshelfScanAt]
       properties:
         totalBooks:
           type: integer
@@ -451,6 +509,9 @@ components:
           type: integer
         booksFailed:
           type: integer
+        booksLiveOnKdp:
+          type: integer
+          description: Books confirmed fully live on KDP (all 3 formats live)
         totalJobs:
           type: integer
         jobsPending:
@@ -464,3 +525,7 @@ components:
         lastScanAt:
           type: ["string", "null"]
           format: date-time
+        lastBookshelfScanAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the KDP bookshelf was last scanned
