@@ -51,7 +51,7 @@ PNPM_VER=$(pnpm --version)
 echo -e "${GREEN}      ✓ pnpm ${PNPM_VER}${NC}"
 
 echo "  Installing workspace dependencies (this takes ~30 seconds the first time)..."
-if ! pnpm install --ignore-scripts; then
+if ! pnpm install; then
   echo -e "${RED}pnpm install failed — see errors above.${NC}"
   exit 1
 fi
