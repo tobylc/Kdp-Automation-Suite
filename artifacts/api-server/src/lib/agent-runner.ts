@@ -92,29 +92,72 @@ async function askClaude(
   const screenshotBuffer = await page.screenshot({ fullPage: false });
   const base64Screenshot = screenshotBuffer.toString("base64");
 
+  // Parse KDP content JSON if available
+  let kdpDetails = "";
+  if (bookData.kdpContent) {
+    try {
+      const kdp = JSON.parse(bookData.kdpContent) as Record<string, string>;
+      kdpDetails = `
+KDP CONTENT TO USE (copy these exactly into the KDP form fields):
+- Author: ${kdp["author"] ?? "Unknown"}
+- Description: ${kdp["description"] ?? ""}
+- Keywords (7, one per field): ${kdp["keywords"] ?? ""}
+- Categories: ${kdp["categories"] ?? ""}
+- Back Cover / Series Summary: ${kdp["series_summary"] ?? ""}`;
+    } catch {
+      kdpDetails = "\n- KDP content: available but could not be parsed";
+    }
+  }
+
+  // Format-specific guidance
+  const formatGuidance: Record<string, string> = {
+    ebook: `
+FORMAT: Kindle eBook
+- Navigate to KDP Bookshelf → Create a new Kindle eBook (or update existing)
+- Use the manuscript file URL as the eBook content (KDP accepts .docx)
+- Cover: use the JPG cover image
+- Set price, territories (worldwide), and publishing rights
+- The KDP eBook workflow has 3 pages: Kindle eBook Details → Kindle eBook Content → Kindle eBook Pricing`,
+    paperback: `
+FORMAT: Paperback
+- Navigate to KDP Bookshelf → Create a new Paperback (or update existing)
+- Use the manuscript file URL (6"x9" .docx) for the interior
+- Cover: use the PNG cover image (for print-ready cover)
+- Trim size: 6" x 9"
+- The KDP Paperback workflow has 3 pages: Paperback Details → Paperback Content → Paperback Rights & Pricing`,
+    hardcover: `
+FORMAT: Hardcover
+- Navigate to KDP Bookshelf → Create a new Hardcover (or update existing)
+- Use the manuscript file URL (6"x9" .docx) for the interior
+- Cover: use the PNG cover image
+- Trim size: 6" x 9"
+- The KDP Hardcover workflow has 3 pages: Hardcover Details → Hardcover Content → Hardcover Rights & Pricing`,
+  };
+
   const systemPrompt = `You are an expert browser automation agent that uploads books to Amazon KDP (Kindle Direct Publishing).
 
 You are currently uploading a book with the following details:
 - Title: ${bookTitle}
 - Format: ${format.toUpperCase()}
-- Manuscript file: ${bookData.manuscriptUrl ?? "not available"}
-- Cover JPG: ${bookData.coverJpgUrl ?? "not available"}
-- Cover PNG: ${bookData.coverPngUrl ?? "not available"}
-- KDP Content (description, keywords, etc.): ${bookData.kdpContent ? "available" : "not available"}
+- Manuscript URL: ${bookData.manuscriptUrl ?? "not available"} (download and upload this file)
+- Cover JPG URL: ${bookData.coverJpgUrl ?? "not available"}
+- Cover PNG URL: ${bookData.coverPngUrl ?? "not available"}
+${kdpDetails}
+
+${formatGuidance[format] ?? ""}
 
 You are on step ${stepNumber} of the upload process.
 
 Previous actions taken:
 ${previousActions.slice(-5).join("\n") || "None yet"}
 
-Your goal is to complete the ${format} upload on KDP. 
-
 IMPORTANT RULES:
-1. You must respond with a JSON object describing exactly ONE action to take next
-2. Be precise with selectors — prefer text content, labels, or stable IDs
-3. If the upload is complete (success message visible), set isComplete: true
-4. If you encounter an error you cannot recover from, set error: "description"
-5. Never loop on the same action more than 3 times
+1. Respond with a JSON object describing exactly ONE action to take next
+2. Be precise with selectors — prefer visible text labels, aria labels, or stable IDs
+3. For file uploads: use upload_file with the URL as filepath — KDP accepts direct URL uploads in some fields, otherwise navigate to the URL first to trigger a download
+4. If the upload is fully submitted and confirmed, set isComplete: true
+5. If you encounter an unrecoverable error, set error: "description"
+6. Never repeat the same action more than 3 times in a row — scroll or try an alternative approach instead
 
 Respond ONLY with valid JSON in this exact format:
 {

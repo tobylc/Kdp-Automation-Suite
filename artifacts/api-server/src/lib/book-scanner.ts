@@ -3,35 +3,61 @@ import { db, booksTable, uploadJobsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
 
-const SOURCE_URL = "https://scripturemadesimple.replit.app/my-studies";
+const BASE_URL = "https://scripturemadesimple.replit.app";
+const SOURCE_URL = `${BASE_URL}/my-studies`;
+
+interface KdpContentData {
+  description: string;
+  categories: string;
+  keywords: string;
+  series_summary: string;
+  back_cover_description: string;
+}
+
+interface KdpContentResponse extends KdpContentData {
+  success: boolean;
+}
 
 interface DiscoveredBook {
+  studyId: string;
   title: string;
+  author: string | null;
   sourceUrl: string;
-  manuscriptUrl: string | null;
-  coverJpgUrl: string | null;
-  coverPngUrl: string | null;
-  kdpContentUrl: string | null;
+  manuscriptUrl: string;
+  coverJpgUrl: string;
+  coverPngUrl: string;
+  kdpContent: string | null;
 }
 
 async function fetchPage(url: string): Promise<string> {
   const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; KDPUploader/1.0)",
-    },
-    signal: AbortSignal.timeout(30000),
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; KDPUploader/1.0)" },
+    signal: AbortSignal.timeout(60000),
   });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
-  }
+  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
   return res.text();
 }
 
-function resolveUrl(base: string, relative: string): string {
+async function fetchKdpContent(studyId: string): Promise<KdpContentData | null> {
   try {
-    return new URL(relative, base).href;
-  } catch {
-    return relative;
+    const res = await fetch(`${BASE_URL}/api/generate-kdp-content/${studyId}`, {
+      method: "POST",
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; KDPUploader/1.0)" },
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as KdpContentResponse;
+    if (!data.success) return null;
+    return {
+      description: data.description ?? "",
+      categories: data.categories ?? "",
+      keywords: data.keywords ?? "",
+      series_summary: data.series_summary ?? "",
+      back_cover_description: data.back_cover_description ?? "",
+    };
+  } catch (err) {
+    logger.warn({ err, studyId }, "Failed to fetch KDP content for study");
+    return null;
   }
 }
 
@@ -41,156 +67,64 @@ async function discoverBooks(): Promise<DiscoveredBook[]> {
   const $ = cheerio.load(html);
   const books: DiscoveredBook[] = [];
 
-  // Look for book entries — each study/book section
-  // Strategy: find headings or cards that represent individual book titles
-  // and look for download links near them
-  const baseUrl = SOURCE_URL;
+  $("div.study-card[data-study-id]").each((_i, el) => {
+    const $card = $(el);
+    const studyId = $card.attr("data-study-id");
+    if (!studyId) return;
 
-  // Try to find book title containers with download links
-  // Look for elements that contain both a title and download links
-  const processed = new Set<string>();
+    // Title: from data-book-name (clean, no emoji) or .study-title (strip emoji)
+    const rawTitle =
+      $card.attr("data-book-name") ||
+      $card.find(".study-title").first().text().replace(/^[^\w]*/u, "").trim();
+    const title = rawTitle.trim();
+    if (!title) return;
 
-  $("*").each((_i, el) => {
-    const $el = $(el);
-    const text = $el.text().trim();
-
-    // Find elements that look like book title containers
-    // with sibling or child download links
-    const links = $el.find("a[href]");
-    if (links.length === 0) return;
-
-    let manuscriptUrl: string | null = null;
-    let coverJpgUrl: string | null = null;
-    let coverPngUrl: string | null = null;
-    let kdpContentUrl: string | null = null;
-    let hasDownloads = false;
-
-    links.each((_j, link) => {
-      const href = $(link).attr("href") ?? "";
-      const linkText = $(link).text().toLowerCase();
-      const resolved = resolveUrl(baseUrl, href);
-
-      if (
-        linkText.includes("manuscript") ||
-        href.toLowerCase().includes("manuscript") ||
-        href.toLowerCase().includes(".pdf") ||
-        linkText.includes("6x9") ||
-        linkText.includes("interior")
-      ) {
-        manuscriptUrl = resolved;
-        hasDownloads = true;
-      } else if (
-        href.toLowerCase().includes(".jpg") ||
-        href.toLowerCase().includes(".jpeg") ||
-        linkText.includes("cover") && href.toLowerCase().includes("jpg")
-      ) {
-        coverJpgUrl = resolved;
-        hasDownloads = true;
-      } else if (
-        href.toLowerCase().includes(".png") ||
-        (linkText.includes("cover") && href.toLowerCase().includes("png"))
-      ) {
-        coverPngUrl = resolved;
-        hasDownloads = true;
-      } else if (
-        linkText.includes("kdp content") ||
-        linkText.includes("kdp") ||
-        href.toLowerCase().includes("kdp-content") ||
-        href.toLowerCase().includes("kdpcontent")
-      ) {
-        kdpContentUrl = resolved;
-        hasDownloads = true;
+    // Author: find .study-date containing "by "
+    let author: string | null = null;
+    $card.find(".study-date").each((_j, dateEl): false | void => {
+      const txt = $(dateEl).text().trim();
+      if (txt.startsWith("by ")) {
+        author = txt.slice(3).trim();
+        return false;
       }
     });
 
-    if (!hasDownloads) return;
-
-    // Extract title — look for nearest heading or strong text
-    let title = "";
-    const heading = $el.find("h1, h2, h3, h4, h5, h6").first().text().trim();
-    const strong = $el.find("strong, b").first().text().trim();
-
-    if (heading) {
-      title = heading;
-    } else if (strong) {
-      title = strong;
-    } else {
-      // Use first meaningful text fragment
-      const rawText = text.replace(/\s+/g, " ").trim();
-      title = rawText.substring(0, 80).trim();
-    }
-
-    if (!title || title.length < 3) return;
-    if (processed.has(title)) return;
-    processed.add(title);
-
     books.push({
+      studyId,
       title,
+      author,
       sourceUrl: SOURCE_URL,
-      manuscriptUrl,
-      coverJpgUrl,
-      coverPngUrl,
-      kdpContentUrl,
+      manuscriptUrl: `${BASE_URL}/download/${studyId}/6x9`,
+      coverPngUrl: `${BASE_URL}/download-uploaded-cover/${studyId}/png`,
+      coverJpgUrl: `${BASE_URL}/download-uploaded-cover/${studyId}/jpg`,
+      kdpContent: null,
     });
   });
 
-  // Fallback: if nothing found with the deep strategy, look for all download links
-  // and group them by proximity to headings
-  if (books.length === 0) {
-    logger.warn("Deep scan found no books, trying heading-based scan");
-
-    $("h1, h2, h3, h4").each((_i, heading) => {
-      const $heading = $(heading);
-      const title = $heading.text().trim();
-      if (!title || title.length < 3) return;
-      if (processed.has(title)) return;
-
-      // Look at the next siblings for download links
-      let manuscriptUrl: string | null = null;
-      let coverJpgUrl: string | null = null;
-      let coverPngUrl: string | null = null;
-      let kdpContentUrl: string | null = null;
-
-      let $next = $heading.next();
-      for (let depth = 0; depth < 10 && $next.length > 0; depth++) {
-        $next.find("a[href]").addBack("a[href]").each((_j, link) => {
-          const href = $(link).attr("href") ?? "";
-          const linkText = $(link).text().toLowerCase();
-          const resolved = resolveUrl(baseUrl, href);
-
-          if (href.toLowerCase().endsWith(".pdf") || linkText.includes("manuscript") || linkText.includes("6x9")) {
-            manuscriptUrl = resolved;
-          } else if (href.toLowerCase().endsWith(".jpg") || href.toLowerCase().endsWith(".jpeg")) {
-            coverJpgUrl = resolved;
-          } else if (href.toLowerCase().endsWith(".png")) {
-            coverPngUrl = resolved;
-          } else if (linkText.includes("kdp")) {
-            kdpContentUrl = resolved;
-          }
-        });
-
-        // Stop at next heading
-        if ($next.is("h1, h2, h3, h4")) break;
-        $next = $next.next();
-      }
-
-      if (manuscriptUrl || coverJpgUrl || coverPngUrl || kdpContentUrl) {
-        processed.add(title);
-        books.push({ title, sourceUrl: SOURCE_URL, manuscriptUrl, coverJpgUrl, coverPngUrl, kdpContentUrl });
-      }
-    });
-  }
-
-  logger.info({ count: books.length }, "Discovered books from source");
+  logger.info({ count: books.length }, "Discovered books from source HTML");
   return books;
+}
+
+async function enrichKdpContent(bookId: number, studyId: string, title: string, author: string | null): Promise<void> {
+  logger.info({ bookId, studyId, title }, "Fetching KDP content in background");
+  const kdpData = await fetchKdpContent(studyId);
+  if (!kdpData) {
+    logger.warn({ bookId, studyId }, "KDP content fetch returned nothing");
+    return;
+  }
+  const kdpContent = JSON.stringify({ ...kdpData, author, title });
+  await db.update(booksTable).set({ kdpContent }).where(eq(booksTable.id, bookId));
+  logger.info({ bookId, title }, "KDP content saved to book record");
 }
 
 export async function scanForNewBooks(): Promise<{ newBooks: number; totalFound: number }> {
   const discovered = await discoverBooks();
 
   let newCount = 0;
+  const enrichQueue: Array<{ bookId: number; studyId: string; title: string; author: string | null }> = [];
+
   for (const book of discovered) {
-    // Check if book already exists
+    // Check if book already exists by title
     const existing = await db
       .select({ id: booksTable.id })
       .from(booksTable)
@@ -199,7 +133,7 @@ export async function scanForNewBooks(): Promise<{ newBooks: number; totalFound:
 
     if (existing.length > 0) continue;
 
-    // Insert new book
+    // Insert new book immediately (no waiting for KDP content)
     const [inserted] = await db
       .insert(booksTable)
       .values({
@@ -208,7 +142,7 @@ export async function scanForNewBooks(): Promise<{ newBooks: number; totalFound:
         manuscriptUrl: book.manuscriptUrl,
         coverJpgUrl: book.coverJpgUrl,
         coverPngUrl: book.coverPngUrl,
-        kdpContentUrl: book.kdpContentUrl,
+        kdpContent: null,
         status: "discovered",
       })
       .returning({ id: booksTable.id });
@@ -220,8 +154,18 @@ export async function scanForNewBooks(): Promise<{ newBooks: number; totalFound:
       { bookId: inserted.id, format: "hardcover", status: "pending" },
     ]);
 
+    enrichQueue.push({ bookId: inserted.id, studyId: book.studyId, title: book.title, author: book.author });
     newCount++;
     logger.info({ title: book.title, bookId: inserted.id }, "New book discovered and queued");
+  }
+
+  // Enrich KDP content in the background — do not await, returns fast
+  if (enrichQueue.length > 0) {
+    void (async () => {
+      for (const item of enrichQueue) {
+        await enrichKdpContent(item.bookId, item.studyId, item.title, item.author);
+      }
+    })();
   }
 
   return { newBooks: newCount, totalFound: discovered.length };
