@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, uploadJobsTable, jobLogsTable, booksTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import {
   ListJobsQueryParams,
   GetJobParams,
@@ -8,7 +8,7 @@ import {
   ListJobsResponse,
   RunAllJobsResponse,
 } from "@workspace/api-zod";
-import { runUploadJob } from "../lib/agent-runner";
+import { enqueueUploadJob, isJobRunning, jobsWaiting } from "../lib/job-queue";
 import { runAllPendingJobs } from "../lib/scheduler";
 
 const router = Router();
@@ -61,9 +61,12 @@ router.post("/jobs/run-all", async (req, res): Promise<void> => {
   res.json(
     RunAllJobsResponse.parse({
       queued,
-      message: queued > 0
-        ? `Queued ${queued} pending upload jobs`
-        : "No pending jobs to run",
+      message:
+        queued > 0
+          ? `${queued} job(s) added to the upload queue — running one at a time`
+          : isJobRunning()
+          ? `A job is already running (${jobsWaiting()} more waiting)`
+          : "No pending jobs to run",
     }),
   );
 });
@@ -141,16 +144,14 @@ router.post("/jobs/:id/run", async (req, res): Promise<void> => {
     return;
   }
 
-  // Reset job status to pending so it can be rerun
+  // Reset job to pending so it can run (or re-run if it previously failed)
   await db
     .update(uploadJobsTable)
     .set({ status: "pending", errorMessage: null, startedAt: null, completedAt: null })
     .where(eq(uploadJobsTable.id, job.id));
 
-  // Run in background
-  setImmediate(() => {
-    runUploadJob(job.id).catch(() => {});
-  });
+  // Add to the global serial queue — will start after any currently-running job
+  enqueueUploadJob(job.id);
 
   const [updated] = await db
     .select({
