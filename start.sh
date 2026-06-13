@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 # KDP Upload Automation — Local Startup Script
-# Run this once to set everything up, then again any time you want to start the app.
-
-set -euo pipefail
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'
@@ -17,25 +14,50 @@ echo -e "${BOLD}║   KDP Upload Automation — Local Setup    ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
-# ── Locate the project root ────────────────────────────────────────────────────
+# ── Locate project root ────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 if [ ! -f "package.json" ]; then
-  echo -e "${RED}Could not find package.json. Make sure you run this from the project folder.${NC}"
+  echo -e "${RED}Error: cannot find package.json in $SCRIPT_DIR${NC}"
+  echo "Make sure you're running this from inside the unzipped project folder."
   exit 1
 fi
 
-# ── Step 1: Install dependencies ───────────────────────────────────────────────
-echo -e "${BLUE}[1/5]${NC} Installing dependencies..."
+echo -e "  Project root: ${BOLD}$SCRIPT_DIR${NC}"
+echo ""
+
+# ── Step 1: Check Node.js ──────────────────────────────────────────────────────
+echo -e "${BLUE}[1/5]${NC} Checking Node.js..."
+if ! command -v node &>/dev/null; then
+  echo -e "${RED}Node.js is not installed.${NC}"
+  echo "Install it from https://nodejs.org (download the LTS version), then re-run this script."
+  exit 1
+fi
+NODE_VER=$(node --version)
+echo -e "${GREEN}      ✓ Node.js ${NODE_VER}${NC}"
+
+# ── Step 2: Install pnpm if needed ────────────────────────────────────────────
+echo -e "${BLUE}[2/5]${NC} Checking pnpm..."
 if ! command -v pnpm &>/dev/null; then
   echo "  pnpm not found — installing..."
-  npm install -g pnpm --silent
+  npm install -g pnpm
+  if ! command -v pnpm &>/dev/null; then
+    echo -e "${RED}Failed to install pnpm. Try running: npm install -g pnpm${NC}"
+    exit 1
+  fi
 fi
-pnpm install --silent
-echo -e "${GREEN}      ✓ Dependencies ready${NC}"
+PNPM_VER=$(pnpm --version)
+echo -e "${GREEN}      ✓ pnpm ${PNPM_VER}${NC}"
 
-# ── Step 2: Create .env if it does not exist ───────────────────────────────────
+echo "  Installing workspace dependencies (this takes ~30 seconds the first time)..."
+if ! pnpm install; then
+  echo -e "${RED}pnpm install failed — see errors above.${NC}"
+  exit 1
+fi
+echo -e "${GREEN}      ✓ Dependencies installed${NC}"
+
+# ── Step 3: Create .env if missing ────────────────────────────────────────────
 ENV_FILE="artifacts/api-server/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -43,27 +65,25 @@ if [ ! -f "$ENV_FILE" ]; then
   echo -e "${YELLOW}First-time setup — I need two things from you:${NC}"
   echo ""
 
-  # DATABASE_URL
-  echo -e "${BOLD}  1. Your Replit Database URL${NC}"
-  echo "     Open your Replit project → Tools → Secrets → DATABASE_URL"
-  echo "     (or use any PostgreSQL connection string)"
+  echo -e "${BOLD}  1. Your Database URL${NC}"
+  echo "     Open your Replit project in the browser"
+  echo "     → click 'Secrets' in the left sidebar"
+  echo "     → copy the value of DATABASE_URL"
   echo ""
   printf "     Paste DATABASE_URL: "
   read -r DB_URL
 
   echo ""
-
-  # Anthropic API Key
   echo -e "${BOLD}  2. Your Anthropic API Key${NC}"
-  echo "     Get one free at: https://console.anthropic.com/keys"
+  echo "     Get one at: https://console.anthropic.com/keys"
   echo ""
-  printf "     Paste API key: "
+  printf "     Paste API key (sk-ant-...): "
   read -rs AI_KEY
   echo ""
 
-  # Generate a random session secret (not currently required but kept for future use)
-  SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" 2>/dev/null || echo "local-secret-$(date +%s)")
+  SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 
+  mkdir -p "$(dirname "$ENV_FILE")"
   cat >"$ENV_FILE" <<EOF
 DATABASE_URL=${DB_URL}
 AI_INTEGRATIONS_ANTHROPIC_BASE_URL=https://api.anthropic.com
@@ -73,90 +93,83 @@ CDP_ENDPOINT=http://localhost:9222
 PORT=8080
 EOF
 
-  echo ""
-  echo -e "${GREEN}      ✓ .env created${NC}"
+  echo -e "${GREEN}      ✓ .env saved${NC}"
 else
   echo -e "${GREEN}      ✓ .env already exists${NC}"
 fi
 
-# ── Step 3: Sync database schema ──────────────────────────────────────────────
-echo -e "${BLUE}[2/5]${NC} Syncing database schema..."
-pnpm --filter @workspace/db run push 2>/dev/null || true
-echo -e "${GREEN}      ✓ Database schema up to date${NC}"
+# ── Step 4: Push DB schema ─────────────────────────────────────────────────────
+echo ""
+echo "  Syncing database schema..."
+if pnpm --filter @workspace/db run push 2>&1; then
+  echo -e "${GREEN}      ✓ Database schema up to date${NC}"
+else
+  echo -e "${YELLOW}      ⚠ DB push had warnings (may be fine if schema already exists)${NC}"
+fi
 
-# ── Step 4: Launch Chrome with remote debugging ───────────────────────────────
+# ── Step 5: Launch Chrome with remote debugging ────────────────────────────────
+echo ""
 echo -e "${BLUE}[3/5]${NC} Starting Chrome..."
 CDP_PORT=9222
 
 if curl -s --max-time 1 "http://localhost:${CDP_PORT}/json/version" >/dev/null 2>&1; then
   echo -e "${GREEN}      ✓ Chrome already running on port ${CDP_PORT}${NC}"
 else
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    open -a "Google Chrome" --args \
-      --remote-debugging-port="${CDP_PORT}" \
-      --user-data-dir="${HOME}/chrome-kdp-profile" \
-      --no-first-run \
-      --disable-first-run-ui 2>/dev/null || true
-  else
-    google-chrome \
-      --remote-debugging-port="${CDP_PORT}" \
-      --user-data-dir="${HOME}/chrome-kdp-profile" \
-      --no-first-run &
-  fi
+  open -a "Google Chrome" --args \
+    --remote-debugging-port="${CDP_PORT}" \
+    --user-data-dir="${HOME}/chrome-kdp-profile" \
+    --no-first-run \
+    --disable-first-run-ui 2>/dev/null || {
+      echo -e "${RED}Could not launch Google Chrome.${NC}"
+      echo "Make sure Google Chrome is installed in /Applications."
+    }
   sleep 3
-  echo -e "${GREEN}      ✓ Chrome launched on port ${CDP_PORT}${NC}"
+  echo -e "${GREEN}      ✓ Chrome launched${NC}"
 fi
 
-# ── Step 5: Open required tabs in Chrome ─────────────────────────────────────
-echo -e "${BLUE}[4/5]${NC} Opening KDP and Study Guides tabs..."
+# ── Step 6: Open required tabs ─────────────────────────────────────────────────
+echo -e "${BLUE}[4/5]${NC} Opening KDP tabs in Chrome..."
 sleep 1
 
-# Use Chrome's CDP REST API to open tabs
-open_tab() {
-  curl -s --max-time 3 "http://localhost:${CDP_PORT}/json/new?${1}" >/dev/null 2>&1 || true
-}
+EXISTING=$(curl -s --max-time 2 "http://localhost:${CDP_PORT}/json" 2>/dev/null || echo "[]")
 
-# Check if tabs already open
-EXISTING_PAGES=$(curl -s --max-time 2 "http://localhost:${CDP_PORT}/json" 2>/dev/null || echo "[]")
-if echo "$EXISTING_PAGES" | grep -q "kdp.amazon.com"; then
+if echo "$EXISTING" | grep -q "kdp.amazon.com"; then
   echo -e "${GREEN}      ✓ KDP tab already open${NC}"
 else
-  open_tab "https://kdp.amazon.com/en_US/bookshelf"
-  echo -e "${GREEN}      ✓ Opened KDP Bookshelf tab${NC}"
+  curl -s --max-time 3 "http://localhost:${CDP_PORT}/json/new?https://kdp.amazon.com/en_US/bookshelf" >/dev/null 2>&1 || true
+  echo -e "${GREEN}      ✓ Opened Amazon KDP tab${NC}"
 fi
 
-if echo "$EXISTING_PAGES" | grep -q "scripturemadesimple.replit.app"; then
+if echo "$EXISTING" | grep -q "scripturemadesimple.replit.app"; then
   echo -e "${GREEN}      ✓ Study Guides tab already open${NC}"
 else
-  open_tab "https://scripturemadesimple.replit.app/my-studies"
-  echo -e "${GREEN}      ✓ Opened My Study Guides tab${NC}"
+  curl -s --max-time 3 "http://localhost:${CDP_PORT}/json/new?https://scripturemadesimple.replit.app/my-studies" >/dev/null 2>&1 || true
+  echo -e "${GREEN}      ✓ Opened Study Guides tab${NC}"
 fi
 
-# ── All set — start the servers ───────────────────────────────────────────────
-echo -e "${BLUE}[5/5]${NC} Starting servers..."
+# ── All set ────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}${BOLD}  Everything is ready!${NC}"
-echo -e "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "  Dashboard → ${BOLD}http://localhost:3000${NC}"
+echo -e "  ${BOLD}Action needed:${NC} Log in to Amazon KDP in the Chrome"
+echo -e "  window that just opened."
 echo ""
-echo -e "  ${YELLOW}Action needed:${NC} Log in to Amazon KDP in the"
-echo -e "  Chrome window that just opened. Once logged in,"
-echo -e "  the green 'Prepare Workspace' indicator will light"
-echo -e "  up in the dashboard."
+echo -e "  Dashboard will open at → ${BOLD}http://localhost:3000${NC}"
 echo ""
 echo -e "  Press ${BOLD}Ctrl+C${NC} to stop everything."
 echo ""
 
-# Open the dashboard once servers have had a moment to start
-(sleep 5 && open "http://localhost:3000" 2>/dev/null || true) &
+echo -e "${BLUE}[5/5]${NC} Starting servers..."
 
-# Start both servers — API first, then the frontend
+# Open dashboard after servers have a moment to start
+(sleep 6 && open "http://localhost:3000" 2>/dev/null) &
+
+# Start API server in background, frontend in foreground
 pnpm --filter @workspace/api-server run dev &
 API_PID=$!
 
 pnpm --filter @workspace/kdp-uploader run dev
 
-# Cleanup on exit
 wait "$API_PID" 2>/dev/null || true
