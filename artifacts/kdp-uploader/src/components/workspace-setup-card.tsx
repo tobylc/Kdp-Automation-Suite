@@ -2,9 +2,30 @@ import { useState } from "react";
 import { useGetSetupStatus, usePrepareWorkspace, getGetSetupStatusQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Loader2, Terminal, RefreshCw, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Terminal, RefreshCw, AlertTriangle, Copy, Check, Download } from "lucide-react";
 
-// ─── Individual status row ────────────────────────────────────────────────────
+// ─── Copy-to-clipboard helper ─────────────────────────────────────────────────
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      }}
+      className="inline-flex items-center gap-1 ml-2 px-1.5 py-0.5 rounded text-xs bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+// ─── Status row ───────────────────────────────────────────────────────────────
 
 function StatusRow({ label, ok, loading }: { label: string; ok: boolean; loading: boolean }) {
   return (
@@ -16,14 +37,12 @@ function StatusRow({ label, ok, loading }: { label: string; ok: boolean; loading
       ) : (
         <XCircle className="h-4 w-4 text-red-400 shrink-0" />
       )}
-      <span className={`text-sm ${ok ? "text-foreground" : "text-muted-foreground"}`}>
-        {label}
-      </span>
+      <span className={`text-sm ${ok ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
     </div>
   );
 }
 
-// ─── Step result row (shown after prepare runs) ───────────────────────────────
+// ─── Step result row ──────────────────────────────────────────────────────────
 
 function StepRow({ name, status, message }: { name: string; status: string; message: string }) {
   return (
@@ -43,7 +62,76 @@ function StepRow({ name, status, message }: { name: string; status: string; mess
   );
 }
 
-// ─── Main card ────────────────────────────────────────────────────────────────
+// ─── "Not in local mode" panel ────────────────────────────────────────────────
+
+function LocalSetupGuide() {
+  const downloadUrl = `${window.location.origin}/api/setup/start.sh`;
+
+  return (
+    <Card className="shadow-sm border-blue-200 bg-blue-50/30">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Terminal className="h-4 w-4 text-blue-600" />
+          Run Automation on Your Mac
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0 space-y-4 text-sm">
+        <p className="text-muted-foreground">
+          This dashboard is your control panel. To actually upload books to KDP, the automation
+          needs to run on your local Mac — where your Chrome session and Amazon login live.
+        </p>
+
+        {/* Step 1 */}
+        <div className="space-y-1.5">
+          <p className="font-medium text-foreground">Step 1 — Download the project</p>
+          <p className="text-muted-foreground text-xs">
+            In this Replit editor: click the <strong>three-dot menu (⋯)</strong> at the top of the
+            file panel → <strong>Download as ZIP</strong> → unzip it on your Mac.
+          </p>
+        </div>
+
+        {/* Step 2 */}
+        <div className="space-y-1.5">
+          <p className="font-medium text-foreground">Step 2 — Open Terminal and run one command</p>
+          <p className="text-muted-foreground text-xs mb-2">
+            Drag the unzipped folder into Terminal to navigate to it, then run:
+          </p>
+          <div className="flex items-center bg-zinc-900 text-green-400 rounded-md px-3 py-2 font-mono text-xs">
+            <span className="flex-1 select-all">./start.sh</span>
+            <CopyButton text="./start.sh" />
+          </div>
+          <p className="text-muted-foreground text-xs">
+            The script installs everything, creates your config file (it will ask for your
+            database URL and Anthropic API key once), opens Chrome, and launches the app.
+          </p>
+        </div>
+
+        {/* Step 3 */}
+        <div className="space-y-1.5">
+          <p className="font-medium text-foreground">Step 3 — Log in to Amazon KDP</p>
+          <p className="text-muted-foreground text-xs">
+            A Chrome window opens automatically. Sign into your KDP account there — the
+            automation will reuse that session for all uploads.
+          </p>
+        </div>
+
+        <div className="pt-1 border-t flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            After starting, open <strong>http://localhost:3000</strong> for the local dashboard.
+          </p>
+          <a href={downloadUrl} download="start.sh">
+            <Button variant="outline" size="sm" className="gap-2 text-xs">
+              <Download className="h-3.5 w-3.5" />
+              Download start.sh
+            </Button>
+          </a>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Main card (local mode active) ───────────────────────────────────────────
 
 export function WorkspaceSetupCard() {
   const [prepareResult, setPrepareResult] = useState<{
@@ -65,21 +153,9 @@ export function WorkspaceSetupCard() {
     },
   });
 
-  // If CDP_ENDPOINT is not set, show a compact "not in local mode" notice
+  // Show the local setup guide when CDP_ENDPOINT is not configured
   if (status && !status.localMode) {
-    return (
-      <Card className="shadow-sm border-dashed border-muted-foreground/30 bg-muted/20">
-        <CardContent className="p-4 flex items-center gap-3 text-sm text-muted-foreground">
-          <Terminal className="h-4 w-4 shrink-0" />
-          <span>
-            <strong>Local mode not active.</strong> Set{" "}
-            <code className="text-xs bg-muted px-1 py-0.5 rounded">CDP_ENDPOINT=http://localhost:9222</code>{" "}
-            in your <code className="text-xs bg-muted px-1 py-0.5 rounded">.env</code> to enable
-            one-click workspace setup.
-          </span>
-        </CardContent>
-      </Card>
-    );
+    return <LocalSetupGuide />;
   }
 
   const isReady = status?.isReady ?? false;
@@ -88,9 +164,7 @@ export function WorkspaceSetupCard() {
   return (
     <Card
       className={`shadow-sm transition-colors ${
-        isReady
-          ? "border-emerald-200 bg-emerald-50/40"
-          : "border-amber-200 bg-amber-50/30"
+        isReady ? "border-emerald-200 bg-emerald-50/40" : "border-amber-200 bg-amber-50/30"
       }`}
     >
       <CardHeader className="pb-3">
@@ -117,7 +191,6 @@ export function WorkspaceSetupCard() {
       </CardHeader>
 
       <CardContent className="pt-0 space-y-4">
-        {/* Status checklist */}
         <div className="divide-y divide-border/50">
           <StatusRow
             label="Chrome running with remote debugging"
@@ -141,7 +214,6 @@ export function WorkspaceSetupCard() {
           />
         </div>
 
-        {/* Step results (shown after Prepare runs) */}
         {prepareResult && (
           <div className="rounded-md border bg-background/60 p-3 space-y-0.5">
             {prepareResult.steps.map((step, i) => (
@@ -157,7 +229,6 @@ export function WorkspaceSetupCard() {
           </div>
         )}
 
-        {/* Action button */}
         {!isReady && (
           <Button
             onClick={() => {
