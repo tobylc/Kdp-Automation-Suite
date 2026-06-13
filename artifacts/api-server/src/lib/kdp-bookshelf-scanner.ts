@@ -14,7 +14,7 @@ import { logger } from "./logger";
 import path from "path";
 import fs from "fs";
 
-const KDP_BOOKSHELF_URL = "https://kdp.amazon.com/en_US/title-setup/dashboard";
+const KDP_BOOKSHELF_URL = "https://kdp.amazon.com/en_US/bookshelf";
 const SCREENSHOT_DIR = path.resolve(process.cwd(), "artifacts/api-server/uploads/screenshots");
 
 export type KdpFormatStatus =

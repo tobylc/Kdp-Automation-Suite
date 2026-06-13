@@ -43,36 +43,69 @@ const FIXED = {
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 // ─── Browser singleton ────────────────────────────────────────────────────────
+//
+// Two modes:
+//
+//  CDP mode (recommended for local use):
+//    Set CDP_ENDPOINT=http://localhost:9222 and start Chrome with:
+//      --remote-debugging-port=9222
+//    Playwright attaches to the *existing* Chrome session, inheriting all
+//    cookies and open tabs (KDP login, study guides, etc.).
+//
+//  Headless mode (Replit / CI):
+//    No CDP_ENDPOINT set — a fresh headless Chromium is launched.
+//    Requires a manual KDP login before any upload jobs run.
+
+const CDP_ENDPOINT = process.env.CDP_ENDPOINT;
 
 let browserInstance: Browser | null = null;
 let browserContext: BrowserContext | null = null;
 
 export async function getBrowser(): Promise<{ browser: Browser; context: BrowserContext }> {
   if (!browserInstance || !browserInstance.isConnected()) {
-    logger.info("Launching Playwright browser");
-    browserInstance = await chromium.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--disable-gpu",
-        "--window-size=1280,900",
-      ],
-    });
+    // Reset context whenever the browser instance is recreated
+    browserContext = null;
+
+    if (CDP_ENDPOINT) {
+      // Attach to the user's running Chrome — inherits live KDP session, cookies, etc.
+      logger.info({ cdpEndpoint: CDP_ENDPOINT }, "Connecting to existing Chrome via CDP");
+      browserInstance = await chromium.connectOverCDP(CDP_ENDPOINT);
+      logger.info("CDP connection established");
+    } else {
+      logger.info("Launching headless Playwright browser (CDP_ENDPOINT not set)");
+      browserInstance = await chromium.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--disable-gpu",
+          "--window-size=1280,900",
+        ],
+      });
+    }
   }
 
   if (!browserContext) {
-    browserContext = await browserInstance.newContext({
-      viewport: { width: 1280, height: 900 },
-      userAgent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      acceptDownloads: true,
-    });
-    // Capture new pages (e.g. Print Previewer opens in new tab)
+    if (CDP_ENDPOINT && browserInstance.contexts().length > 0) {
+      // Reuse the default Chrome profile context — it holds all live session cookies
+      browserContext = browserInstance.contexts()[0];
+      logger.info(
+        { openPages: browserContext.pages().length },
+        "Reusing existing Chrome context (CDP mode)",
+      );
+    } else {
+      browserContext = await browserInstance.newContext({
+        viewport: { width: 1280, height: 900 },
+        userAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        acceptDownloads: true,
+      });
+    }
+
     browserContext.on("page", (p) => {
       logger.info({ url: p.url() }, "New page/tab opened in browser context");
     });
