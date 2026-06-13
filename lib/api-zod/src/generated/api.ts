@@ -242,3 +242,33 @@ export const GetStatsResponse = zod.object({
 })
 
 
+/**
+ * Returns whether Chrome CDP is available, which tabs are open, and whether KDP is logged in. Only meaningful when CDP_ENDPOINT is set.
+ * @summary Get local workspace setup status
+ */
+export const GetSetupStatusResponse = zod.object({
+  "localMode": zod.boolean().describe('True when CDP_ENDPOINT is configured (running locally)'),
+  "chromeCdpAvailable": zod.boolean().describe('Chrome is running with --remote-debugging-port'),
+  "kdpTabOpen": zod.boolean().describe('A KDP Bookshelf tab is open in Chrome'),
+  "kdpLoggedIn": zod.boolean().describe('The KDP tab appears to be logged in (not on a sign-in page)'),
+  "studyGuidesTabOpen": zod.boolean().describe('The My Study Guides tab is open in Chrome'),
+  "isReady": zod.boolean().describe('All prerequisites are met — uploads can proceed'),
+  "cdpEndpoint": zod.string().nullish().describe('The configured CDP endpoint URL')
+})
+
+
+/**
+ * Launches Chrome if not running, opens KDP Bookshelf and Study Guides tabs if not already open, and returns a step-by-step result.
+ * @summary Prepare the local workspace
+ */
+export const PrepareWorkspaceResponse = zod.object({
+  "steps": zod.array(zod.object({
+  "name": zod.string(),
+  "status": zod.enum(['ok', 'error', 'skipped']),
+  "message": zod.string()
+})),
+  "isReady": zod.boolean(),
+  "message": zod.string()
+})
+
+

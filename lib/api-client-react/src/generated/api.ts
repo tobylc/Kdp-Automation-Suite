@@ -31,6 +31,8 @@ import type {
   ScanResult,
   ScheduleConfig,
   ScheduleInput,
+  SetupResult,
+  SetupStatus,
   UploadJob,
   UploadJobDetail
 } from './api.schemas';
@@ -947,4 +949,153 @@ export function useGetStats<TData = Awaited<ReturnType<typeof getStats>>, TError
 
 
 
+
+export const getGetSetupStatusUrl = () => {
+
+
+
+
+  return `/api/setup/status`
+}
+
+/**
+ * Returns whether Chrome CDP is available, which tabs are open, and whether KDP is logged in. Only meaningful when CDP_ENDPOINT is set.
+ * @summary Get local workspace setup status
+ */
+export const getSetupStatus = async ( options?: RequestInit): Promise<SetupStatus> => {
+
+  return customFetch<SetupStatus>(getGetSetupStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSetupStatusQueryKey = () => {
+    return [
+    `/api/setup/status`
+    ] as const;
+    }
+
+
+export const getGetSetupStatusQueryOptions = <TData = Awaited<ReturnType<typeof getSetupStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSetupStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSetupStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSetupStatus>>> = ({ signal }) => getSetupStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSetupStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSetupStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getSetupStatus>>>
+export type GetSetupStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get local workspace setup status
+ */
+
+export function useGetSetupStatus<TData = Awaited<ReturnType<typeof getSetupStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSetupStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSetupStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPrepareWorkspaceUrl = () => {
+
+
+
+
+  return `/api/setup/prepare`
+}
+
+/**
+ * Launches Chrome if not running, opens KDP Bookshelf and Study Guides tabs if not already open, and returns a step-by-step result.
+ * @summary Prepare the local workspace
+ */
+export const prepareWorkspace = async ( options?: RequestInit): Promise<SetupResult> => {
+
+  return customFetch<SetupResult>(getPrepareWorkspaceUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPrepareWorkspaceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareWorkspace>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof prepareWorkspace>>, TError,void, TContext> => {
+
+const mutationKey = ['prepareWorkspace'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof prepareWorkspace>>, void> = () => {
+
+
+          return  prepareWorkspace(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrepareWorkspaceMutationResult = NonNullable<Awaited<ReturnType<typeof prepareWorkspace>>>
+
+    export type PrepareWorkspaceMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Prepare the local workspace
+ */
+export const usePrepareWorkspace = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareWorkspace>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof prepareWorkspace>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPrepareWorkspaceMutationOptions(options));
+    }
 

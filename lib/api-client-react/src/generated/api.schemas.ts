@@ -300,6 +300,47 @@ export interface DashboardStats {
   lastBookshelfScanAt: string | null;
 }
 
+export interface SetupStatus {
+  /** True when CDP_ENDPOINT is configured (running locally) */
+  localMode: boolean;
+  /** Chrome is running with --remote-debugging-port */
+  chromeCdpAvailable: boolean;
+  /** A KDP Bookshelf tab is open in Chrome */
+  kdpTabOpen: boolean;
+  /** The KDP tab appears to be logged in (not on a sign-in page) */
+  kdpLoggedIn: boolean;
+  /** The My Study Guides tab is open in Chrome */
+  studyGuidesTabOpen: boolean;
+  /** All prerequisites are met — uploads can proceed */
+  isReady: boolean;
+  /**
+     * The configured CDP endpoint URL
+     * @nullable
+     */
+  cdpEndpoint?: string | null;
+}
+
+export type SetupStepStatus = typeof SetupStepStatus[keyof typeof SetupStepStatus];
+
+
+export const SetupStepStatus = {
+  ok: 'ok',
+  error: 'error',
+  skipped: 'skipped',
+} as const;
+
+export interface SetupStep {
+  name: string;
+  status: SetupStepStatus;
+  message: string;
+}
+
+export interface SetupResult {
+  steps: SetupStep[];
+  isReady: boolean;
+  message: string;
+}
+
 export type ListJobsParams = {
 status?: ListJobsStatus;
 format?: ListJobsFormat;

@@ -18,6 +18,8 @@ tags:
     description: Cron schedule configuration
   - name: stats
     description: Dashboard statistics
+  - name: setup
+    description: Local workspace setup
 
 paths:
   /healthz:
@@ -249,6 +251,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardStats"
+
+  /setup/status:
+    get:
+      operationId: getSetupStatus
+      tags: [setup]
+      summary: Get local workspace setup status
+      description: Returns whether Chrome CDP is available, which tabs are open, and whether KDP is logged in. Only meaningful when CDP_ENDPOINT is set.
+      responses:
+        "200":
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+
+  /setup/prepare:
+    post:
+      operationId: prepareWorkspace
+      tags: [setup]
+      summary: Prepare the local workspace
+      description: Launches Chrome if not running, opens KDP Bookshelf and Study Guides tabs if not already open, and returns a step-by-step result.
+      responses:
+        "200":
+          description: Preparation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupResult"
 
 components:
   schemas:
@@ -529,3 +559,54 @@ components:
           type: ["string", "null"]
           format: date-time
           description: When the KDP bookshelf was last scanned
+
+    SetupStatus:
+      type: object
+      required: [localMode, chromeCdpAvailable, kdpTabOpen, kdpLoggedIn, studyGuidesTabOpen, isReady]
+      properties:
+        localMode:
+          type: boolean
+          description: True when CDP_ENDPOINT is configured (running locally)
+        chromeCdpAvailable:
+          type: boolean
+          description: Chrome is running with --remote-debugging-port
+        kdpTabOpen:
+          type: boolean
+          description: A KDP Bookshelf tab is open in Chrome
+        kdpLoggedIn:
+          type: boolean
+          description: The KDP tab appears to be logged in (not on a sign-in page)
+        studyGuidesTabOpen:
+          type: boolean
+          description: The My Study Guides tab is open in Chrome
+        isReady:
+          type: boolean
+          description: All prerequisites are met — uploads can proceed
+        cdpEndpoint:
+          type: ["string", "null"]
+          description: The configured CDP endpoint URL
+
+    SetupStep:
+      type: object
+      required: [name, status, message]
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [ok, error, skipped]
+        message:
+          type: string
+
+    SetupResult:
+      type: object
+      required: [steps, isReady, message]
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/SetupStep"
+        isReady:
+          type: boolean
+        message:
+          type: string

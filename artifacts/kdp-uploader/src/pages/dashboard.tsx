@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FormatBadge } from "@/components/format-badge";
 import { StatusBadge } from "@/components/status-badge";
+import { WorkspaceSetupCard } from "@/components/workspace-setup-card";
 import { RefreshCw, Play, Library, CheckCircle2, Clock, AlertTriangle, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -75,6 +76,9 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto w-full flex flex-col gap-8">
+
+      <WorkspaceSetupCard />
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mission Control</h1>
