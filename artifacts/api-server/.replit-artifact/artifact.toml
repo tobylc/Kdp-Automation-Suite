@@ -15,7 +15,7 @@ run = "pnpm --filter @workspace/api-server run dev"
 [services.production]
 
 [services.production.build]
-args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
+args = ["bash", "-c", "pnpm --filter @workspace/api-server run build && pnpm exec playwright install chromium --with-deps"]
 
 [services.production.build.env]
 NODE_ENV = "production"
