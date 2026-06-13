@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: KDP Book Upload Automation API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: books
+    description: Book title management
+  - name: jobs
+    description: Upload job management
+  - name: schedule
+    description: Cron schedule configuration
+  - name: stats
+    description: Dashboard statistics
+
 paths:
   /healthz:
     get:
@@ -24,13 +33,434 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      summary: List all discovered books
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+
+  /books/scan:
+    post:
+      operationId: scanForBooks
+      tags: [books]
+      summary: Trigger a scan for new book titles
+      description: Scrapes scripturemadesimple.replit.app/my-studies and downloads assets for any new titles
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+
+  /books/{id}:
+    get:
+      operationId: getBook
+      tags: [books]
+      summary: Get a single book with its upload jobs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Book detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List all upload jobs
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, running, completed, failed]
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ebook, paperback, hardcover]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UploadJob"
+
+  /jobs/run-all:
+    post:
+      operationId: runAllJobs
+      tags: [jobs]
+      summary: Queue and run all pending jobs
+      responses:
+        "200":
+          description: Jobs queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunAllResult"
+
+  /jobs/{id}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get a single job with full logs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadJobDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}/run:
+    post:
+      operationId: runJob
+      tags: [jobs]
+      summary: Run or re-run a specific upload job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadJob"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /schedule:
+    get:
+      operationId: getSchedule
+      tags: [schedule]
+      summary: Get current cron schedule configuration
+      responses:
+        "200":
+          description: Schedule config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleConfig"
+    patch:
+      operationId: updateSchedule
+      tags: [schedule]
+      summary: Update cron schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleInput"
+      responses:
+        "200":
+          description: Updated schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleConfig"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Dashboard summary statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Book:
+      type: object
+      required: [id, title, discoveredAt, status, ebookStatus, paperbackStatus, hardcoverStatus]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        sourceUrl:
+          type: ["string", "null"]
+        manuscriptUrl:
+          type: ["string", "null"]
+        coverJpgUrl:
+          type: ["string", "null"]
+        coverPngUrl:
+          type: ["string", "null"]
+        kdpContentUrl:
+          type: ["string", "null"]
+        discoveredAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [discovered, downloading, ready, uploading, completed, failed]
+        ebookStatus:
+          type: ["string", "null"]
+          enum: [pending, running, completed, failed, null]
+        paperbackStatus:
+          type: ["string", "null"]
+          enum: [pending, running, completed, failed, null]
+        hardcoverStatus:
+          type: ["string", "null"]
+          enum: [pending, running, completed, failed, null]
+
+    BookDetail:
+      type: object
+      required: [id, title, discoveredAt, status, jobs]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        sourceUrl:
+          type: ["string", "null"]
+        manuscriptUrl:
+          type: ["string", "null"]
+        coverJpgUrl:
+          type: ["string", "null"]
+        coverPngUrl:
+          type: ["string", "null"]
+        kdpContentUrl:
+          type: ["string", "null"]
+        kdpContent:
+          type: ["string", "null"]
+        discoveredAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [discovered, downloading, ready, uploading, completed, failed]
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadJobDetail"
+
+    UploadJob:
+      type: object
+      required: [id, bookId, bookTitle, format, status, createdAt]
+      properties:
+        id:
+          type: integer
+        bookId:
+          type: integer
+        bookTitle:
+          type: string
+        format:
+          type: string
+          enum: [ebook, paperback, hardcover]
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: ["string", "null"]
+        lastScreenshotUrl:
+          type: ["string", "null"]
+
+    UploadJobDetail:
+      type: object
+      required: [id, bookId, bookTitle, format, status, createdAt, logs]
+      properties:
+        id:
+          type: integer
+        bookId:
+          type: integer
+        bookTitle:
+          type: string
+        format:
+          type: string
+          enum: [ebook, paperback, hardcover]
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: ["string", "null"]
+        lastScreenshotUrl:
+          type: ["string", "null"]
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobLog"
+
+    JobLog:
+      type: object
+      required: [id, jobId, level, message, createdAt]
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        level:
+          type: string
+          enum: [info, warn, error, success]
+        message:
+          type: string
+        screenshotUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ScanResult:
+      type: object
+      required: [newBooks, totalFound, message]
+      properties:
+        newBooks:
+          type: integer
+        totalFound:
+          type: integer
+        message:
+          type: string
+
+    RunAllResult:
+      type: object
+      required: [queued, message]
+      properties:
+        queued:
+          type: integer
+        message:
+          type: string
+
+    ScheduleConfig:
+      type: object
+      required: [id, cronExpression, enabled, createdAt]
+      properties:
+        id:
+          type: integer
+        cronExpression:
+          type: string
+        enabled:
+          type: boolean
+        lastRunAt:
+          type: ["string", "null"]
+          format: date-time
+        nextRunAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ScheduleInput:
+      type: object
+      properties:
+        cronExpression:
+          type: string
+        enabled:
+          type: boolean
+
+    DashboardStats:
+      type: object
+      required: [totalBooks, booksReady, booksCompleted, booksFailed, totalJobs, jobsPending, jobsRunning, jobsCompleted, jobsFailed, lastScanAt]
+      properties:
+        totalBooks:
+          type: integer
+        booksReady:
+          type: integer
+        booksCompleted:
+          type: integer
+        booksFailed:
+          type: integer
+        totalJobs:
+          type: integer
+        jobsPending:
+          type: integer
+        jobsRunning:
+          type: integer
+        jobsCompleted:
+          type: integer
+        jobsFailed:
+          type: integer
+        lastScanAt:
+          type: ["string", "null"]
+          format: date-time

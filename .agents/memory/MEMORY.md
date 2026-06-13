@@ -1,0 +1,1 @@
+- [KDP Automation Architecture](kdp-automation.md) — agent runner uses shared Playwright browser to preserve KDP session; jobs run sequentially to avoid rate limits.
