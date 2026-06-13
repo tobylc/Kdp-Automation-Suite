@@ -124,17 +124,20 @@ export async function scanForNewBooks(): Promise<{ newBooks: number; totalFound:
   const enrichQueue: Array<{ bookId: number; studyId: string; title: string; author: string | null }> = [];
 
   for (const book of discovered) {
-    // Check if book already exists by title
+    // Check if book already exists by title OR by manuscriptUrl (covers race conditions
+    // where two concurrent scans both read "not found" before either inserts)
     const existing = await db
       .select({ id: booksTable.id })
       .from(booksTable)
-      .where(eq(booksTable.title, book.title))
+      .where(eq(booksTable.manuscriptUrl, book.manuscriptUrl))
       .limit(1);
 
     if (existing.length > 0) continue;
 
-    // Insert new book immediately (no waiting for KDP content)
-    const [inserted] = await db
+    // Insert new book — ON CONFLICT DO NOTHING guards against the narrow race window
+    // where two concurrent scanner calls slip past the check above simultaneously.
+    // The unique index on manuscript_url enforces this at the DB level.
+    const inserted_rows = await db
       .insert(booksTable)
       .values({
         title: book.title,
@@ -145,7 +148,11 @@ export async function scanForNewBooks(): Promise<{ newBooks: number; totalFound:
         kdpContent: null,
         status: "discovered",
       })
+      .onConflictDoNothing()
       .returning({ id: booksTable.id });
+
+    if (inserted_rows.length === 0) continue; // conflict — already existed
+    const [inserted] = inserted_rows;
 
     // Create pending upload jobs for all 3 formats
     await db.insert(uploadJobsTable).values([
