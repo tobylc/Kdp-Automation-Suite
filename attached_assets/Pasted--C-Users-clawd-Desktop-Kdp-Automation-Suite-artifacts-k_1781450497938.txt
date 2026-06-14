@@ -1,0 +1,72 @@
+^C/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/kdp-uploader:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/kdp-uploader@0.0.0 dev: `vite --config vite.config.ts --host 0.0.0.0`
+Command failed with signal "SIGINT"
+
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % git fetch origin && git reset --hard origin/main
+HEAD is now at 386135e Add manuscript file and update screenshot asset for project
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % pnpm install
+kill -9 $(lsof -ti:8080) $(lsof -ti:3000) 2>/dev/null; sleep 2; set -a; source artifacts/api-server/.env; set +a && pnpm --filter @workspace/api-server run dev & PORT=3000 BASE_PATH=/ pnpm --filter @workspace/kdp-uploader run dev
+Scope: all 10 workspace projects
+Lockfile is up to date, resolution step is skipped
+Packages: +26 -1
+++++++++++++++++++++++++++-
+Progress: resolved 26, reused 8, downloaded 18, added 25, done
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock'
+└─ Done in 11ms
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+sh: line 1: 66480 Killed: 9               pnpm run start
+/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/api-server@0.0.0 dev: `export NODE_ENV=development && pnpm run build && pnpm run start`
+Exit status 137
+[1]  + exit 137   pnpm --filter @workspace/api-server run dev
+[1] 67923
+Scope: all 10 workspace projects
+Scope: all 10 workspace projects
+Lockfile is up to date, resolution step is skipped
+Lockfile is up to date, resolution step is skipped
+Already up to date
+Already up to date
+[WARN] Failed to create bin at /Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/node_modules/.bin/esbuild. ENOENT: no such file or directory, chmod '/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/node_modules/.bin/esbuild'
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock'
+└─ Running...
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock'
+└─ Done in 10ms
+Done in 568ms using pnpm v11.1.1
+Done in 568ms using pnpm v11.1.1
+$ export NODE_ENV=development && pnpm run build && pnpm run start
+$ vite --config vite.config.ts --host 0.0.0.0
+$ node ./build.mjs
+
+  dist/index.mjs                       5.5mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                  10.5mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.1kb
+  dist/pino-pretty.mjs.map           204.0kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+
+⚡ Done in 225ms
+8:20:26 AM [vite] (client) Re-optimizing dependencies because lockfile has changed
+
+  VITE v7.3.3  ready in 207 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.5.144:3000/
+  ➜  Network: http://100.99.179.122:3000/
+  ➜  press h + enter to show help
+$ node --enable-source-maps ./dist/index.mjs
+(node:68066) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:68066) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
