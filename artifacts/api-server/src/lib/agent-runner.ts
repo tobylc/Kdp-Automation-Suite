@@ -802,11 +802,15 @@ export async function runUploadJob(jobId: number): Promise<void> {
 
   // 6. Get browser
   const { context } = await getBrowser();
-  let page = await context.newPage();
+
+  // Reuse existing KDP tab if one is open, otherwise open a new one
+  const allPages = context.pages();
+  const existingKdpPage = allPages.find((p) => p.url().includes("kdp.amazon.com"));
+  let page = existingKdpPage ?? await context.newPage();
 
   try {
     // 7. Navigate to KDP
-    await addLog(jobId, "info", "Navigating to KDP bookshelf");
+    await addLog(jobId, "info", existingKdpPage ? "Reusing existing KDP tab" : "Opening new KDP tab");
     await page.goto(`${KDP_URL}/title-setup/dashboard`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(randomDelay(1000, 2000));
 
