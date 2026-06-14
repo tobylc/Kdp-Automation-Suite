@@ -35,6 +35,7 @@ interface PageExtraction {
   hasNextPage: boolean;
   debugH2s?: string[];
   debugH3s?: string[];
+  paginationHtml?: string;
 }
 
 export interface BookshelfScanResult {
@@ -317,22 +318,61 @@ async function extractPageDataFromDom(page: Page): Promise<PageExtraction> {
       }
     }
 
-    // ── Pagination ─────────────────────────────────────────────────────────────
-    const nextDisabled = document.querySelector(
-      'li.a-last.a-disabled, [aria-label="Go to next page"][disabled], .a-pagination .a-last.a-disabled'
-    );
-    const nextEnabled = document.querySelector(
-      'li.a-last:not(.a-disabled) a, .a-pagination .a-last:not(.a-disabled) a, [aria-label="Go to next page"]:not([disabled])'
-    );
-    const hasNextPage = !nextDisabled && !!nextEnabled;
+    // ── Pagination — multiple strategies ──────────────────────────────────────
+    let hasNextPage = false;
 
-    return { titles, hasNextPage, debugH2s: h2s, debugH3s: h3s };
+    // Strategy A: Amazon standard .a-pagination component
+    const aLastDisabled = document.querySelector(
+      'li.a-last.a-disabled, .a-pagination .a-last.a-disabled'
+    );
+    const aLastEnabled = document.querySelector(
+      'li.a-last:not(.a-disabled) a, .a-pagination .a-last:not(.a-disabled) a'
+    );
+    if (!aLastDisabled && aLastEnabled) hasNextPage = true;
+
+    // Strategy B: aria-label based next button
+    if (!hasNextPage) {
+      const ariaNext = document.querySelector(
+        '[aria-label="Go to next page"]:not([disabled]):not([aria-disabled="true"]), [aria-label="Next page"]:not([disabled])'
+      );
+      if (ariaNext) hasNextPage = true;
+    }
+
+    // Strategy C: any link/button whose visible text is "Next"
+    if (!hasNextPage) {
+      const allClickable = Array.from(document.querySelectorAll('a, button'));
+      const nextBtn = allClickable.find(el => {
+        const t = (el.textContent || "").trim().toLowerCase();
+        return (t === "next" || t === "next page") &&
+          !el.closest('.a-disabled, [disabled], [aria-disabled="true"]') &&
+          !(el as HTMLAnchorElement | HTMLButtonElement).hasAttribute('disabled');
+      });
+      if (nextBtn) hasNextPage = true;
+    }
+
+    // Strategy D: compare current page number to max visible page number
+    if (!hasNextPage) {
+      const selectedPage = document.querySelector('.a-pagination .a-selected, .a-pagination li.a-normal.a-selected');
+      const currentPageNum = parseInt(selectedPage?.textContent?.trim() || "0", 10);
+      if (currentPageNum > 0) {
+        const allPageNums = Array.from(document.querySelectorAll('.a-pagination li a, .a-pagination li span'))
+          .map(el => parseInt(el.textContent?.trim() || "", 10))
+          .filter(n => !isNaN(n) && n > 0);
+        if (allPageNums.some(n => n > currentPageNum)) hasNextPage = true;
+      }
+    }
+
+    // Debug: capture what pagination elements exist
+    const paginationHtml = document.querySelector('.a-pagination')?.outerHTML?.slice(0, 500) || "none found";
+
+    return { titles, hasNextPage, debugH2s: h2s, debugH3s: h3s, paginationHtml };
   });
 
   logger.info(
     {
       found: result.titles.length,
       hasNextPage: result.hasNextPage,
+      pagination: result.paginationHtml,
       titles: result.titles.map(t => t.kdpTitle),
     },
     "bookshelf-scanner: DOM extraction result"
@@ -341,7 +381,7 @@ async function extractPageDataFromDom(page: Page): Promise<PageExtraction> {
   // Log headings when no titles found — helps diagnose DOM structure changes
   if (result.titles.length === 0) {
     logger.warn(
-      { h2s: result.debugH2s, h3s: result.debugH3s },
+      { h2s: result.debugH2s, h3s: result.debugH3s, pagination: result.paginationHtml },
       "bookshelf-scanner: no titles extracted — page heading dump for diagnosis"
     );
   }
