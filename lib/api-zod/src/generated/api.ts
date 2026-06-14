@@ -201,6 +201,10 @@ export const GetAiProviderConfigResponse = zod.object({
   "model": zod.string(),
   "hasApiKey": zod.boolean().describe('True if an API key is stored (key value is never returned)'),
   "baseUrl": zod.string().nullish(),
+  "smartRoutingEnabled": zod.boolean().describe('When true, tries primary model first then escalates to fallback on failure or uncertainty'),
+  "fallbackProvider": zod.enum(['anthropic', 'openai', 'openrouter', 'null']).nullish(),
+  "fallbackModel": zod.string().nullish(),
+  "hasFallbackApiKey": zod.boolean().optional(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -212,7 +216,11 @@ export const UpdateAiProviderConfigBody = zod.object({
   "provider": zod.enum(['anthropic', 'openai', 'openrouter']),
   "model": zod.string(),
   "apiKey": zod.string().nullish().describe('API key — omit to keep existing key unchanged'),
-  "baseUrl": zod.string().nullish()
+  "baseUrl": zod.string().nullish(),
+  "smartRoutingEnabled": zod.boolean().optional(),
+  "fallbackProvider": zod.string().nullish(),
+  "fallbackModel": zod.string().nullish(),
+  "fallbackApiKey": zod.string().nullish().describe('Fallback API key — omit to keep existing unchanged')
 })
 
 export const UpdateAiProviderConfigResponse = zod.object({
@@ -221,6 +229,10 @@ export const UpdateAiProviderConfigResponse = zod.object({
   "model": zod.string(),
   "hasApiKey": zod.boolean().describe('True if an API key is stored (key value is never returned)'),
   "baseUrl": zod.string().nullish(),
+  "smartRoutingEnabled": zod.boolean().describe('When true, tries primary model first then escalates to fallback on failure or uncertainty'),
+  "fallbackProvider": zod.enum(['anthropic', 'openai', 'openrouter', 'null']).nullish(),
+  "fallbackModel": zod.string().nullish(),
+  "hasFallbackApiKey": zod.boolean().optional(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -231,7 +243,12 @@ export const UpdateAiProviderConfigResponse = zod.object({
 export const TestAiProviderConnectionResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
-  "model": zod.string()
+  "model": zod.string(),
+  "fallbackResult": zod.object({
+  "success": zod.boolean().optional(),
+  "message": zod.string().optional(),
+  "model": zod.string().optional()
+}).optional()
 })
 
 

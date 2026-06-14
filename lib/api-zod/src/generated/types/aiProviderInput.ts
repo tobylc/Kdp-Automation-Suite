@@ -17,4 +17,14 @@ export interface AiProviderInput {
   apiKey?: string | null;
   /** @nullable */
   baseUrl?: string | null;
+  smartRoutingEnabled?: boolean;
+  /** @nullable */
+  fallbackProvider?: string | null;
+  /** @nullable */
+  fallbackModel?: string | null;
+  /**
+     * Fallback API key — omit to keep existing unchanged
+     * @nullable
+     */
+  fallbackApiKey?: string | null;
 }

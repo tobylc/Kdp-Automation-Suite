@@ -272,6 +272,19 @@ export const AiProviderConfigProvider = {
   openrouter: 'openrouter',
 } as const;
 
+/**
+ * @nullable
+ */
+export type AiProviderConfigFallbackProvider = typeof AiProviderConfigFallbackProvider[keyof typeof AiProviderConfigFallbackProvider] | null;
+
+
+export const AiProviderConfigFallbackProvider = {
+  anthropic: 'anthropic',
+  openai: 'openai',
+  openrouter: 'openrouter',
+  null: 'null',
+} as const;
+
 export interface AiProviderConfig {
   id: number;
   provider: AiProviderConfigProvider;
@@ -280,6 +293,13 @@ export interface AiProviderConfig {
   hasApiKey: boolean;
   /** @nullable */
   baseUrl?: string | null;
+  /** When true, tries primary model first then escalates to fallback on failure or uncertainty */
+  smartRoutingEnabled: boolean;
+  /** @nullable */
+  fallbackProvider?: AiProviderConfigFallbackProvider;
+  /** @nullable */
+  fallbackModel?: string | null;
+  hasFallbackApiKey?: boolean;
   updatedAt: string;
 }
 
@@ -302,12 +322,29 @@ export interface AiProviderInput {
   apiKey?: string | null;
   /** @nullable */
   baseUrl?: string | null;
+  smartRoutingEnabled?: boolean;
+  /** @nullable */
+  fallbackProvider?: string | null;
+  /** @nullable */
+  fallbackModel?: string | null;
+  /**
+     * Fallback API key — omit to keep existing unchanged
+     * @nullable
+     */
+  fallbackApiKey?: string | null;
 }
+
+export type AiProviderTestResultFallbackResult = {
+  success?: boolean;
+  message?: string;
+  model?: string;
+};
 
 export interface AiProviderTestResult {
   success: boolean;
   message: string;
   model: string;
+  fallbackResult?: AiProviderTestResultFallbackResult;
 }
 
 export interface ScheduleConfig {

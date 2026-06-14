@@ -546,7 +546,7 @@ components:
 
     AiProviderConfig:
       type: object
-      required: [id, provider, model, hasApiKey, updatedAt]
+      required: [id, provider, model, hasApiKey, smartRoutingEnabled, updatedAt]
       properties:
         id:
           type: integer
@@ -560,6 +560,16 @@ components:
           description: True if an API key is stored (key value is never returned)
         baseUrl:
           type: ["string", "null"]
+        smartRoutingEnabled:
+          type: boolean
+          description: When true, tries primary model first then escalates to fallback on failure or uncertainty
+        fallbackProvider:
+          type: ["string", "null"]
+          enum: [anthropic, openai, openrouter, "null"]
+        fallbackModel:
+          type: ["string", "null"]
+        hasFallbackApiKey:
+          type: boolean
         updatedAt:
           type: string
           format: date-time
@@ -578,6 +588,15 @@ components:
           description: API key — omit to keep existing key unchanged
         baseUrl:
           type: ["string", "null"]
+        smartRoutingEnabled:
+          type: boolean
+        fallbackProvider:
+          type: ["string", "null"]
+        fallbackModel:
+          type: ["string", "null"]
+        fallbackApiKey:
+          type: ["string", "null"]
+          description: Fallback API key — omit to keep existing unchanged
 
     AiProviderTestResult:
       type: object
@@ -589,6 +608,15 @@ components:
           type: string
         model:
           type: string
+        fallbackResult:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            model:
+              type: string
 
     ScheduleConfig:
       type: object

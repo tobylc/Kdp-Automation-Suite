@@ -8,7 +8,22 @@ const router = Router();
 const VALID_PROVIDERS = ["anthropic", "openai", "openrouter"] as const;
 type Provider = typeof VALID_PROVIDERS[number];
 
-function validateInput(body: unknown): { provider: Provider; model: string; apiKey?: string | null; baseUrl?: string | null } | null {
+function str(v: unknown): string | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  return String(v);
+}
+
+function validateInput(body: unknown): {
+  provider: Provider;
+  model: string;
+  apiKey?: string | null;
+  baseUrl?: string | null;
+  smartRoutingEnabled?: boolean;
+  fallbackProvider?: string | null;
+  fallbackModel?: string | null;
+  fallbackApiKey?: string | null;
+} | null {
   if (!body || typeof body !== "object") return null;
   const b = body as Record<string, unknown>;
   if (!VALID_PROVIDERS.includes(b.provider as Provider)) return null;
@@ -16,8 +31,12 @@ function validateInput(body: unknown): { provider: Provider; model: string; apiK
   return {
     provider: b.provider as Provider,
     model: b.model.trim(),
-    apiKey: b.apiKey === undefined ? undefined : (b.apiKey === null || b.apiKey === "" ? null : String(b.apiKey)),
-    baseUrl: b.baseUrl === undefined ? undefined : (b.baseUrl === null || b.baseUrl === "" ? null : String(b.baseUrl)),
+    apiKey: str(b.apiKey),
+    baseUrl: str(b.baseUrl),
+    smartRoutingEnabled: b.smartRoutingEnabled === undefined ? undefined : Boolean(b.smartRoutingEnabled),
+    fallbackProvider: str(b.fallbackProvider),
+    fallbackModel: str(b.fallbackModel),
+    fallbackApiKey: str(b.fallbackApiKey),
   };
 }
 
@@ -28,6 +47,10 @@ function serializeConfig(row: typeof aiProviderConfigTable.$inferSelect) {
     model: row.model,
     hasApiKey: !!row.apiKey,
     baseUrl: row.baseUrl ?? null,
+    smartRoutingEnabled: row.smartRoutingEnabled,
+    fallbackProvider: row.fallbackProvider ?? null,
+    fallbackModel: row.fallbackModel ?? null,
+    hasFallbackApiKey: !!row.fallbackApiKey,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -37,7 +60,7 @@ router.get("/settings/ai-provider", async (req, res): Promise<void> => {
   if (!row) {
     const [created] = await db
       .insert(aiProviderConfigTable)
-      .values({ provider: "anthropic", model: "claude-sonnet-4-6" })
+      .values({ provider: "anthropic", model: "claude-sonnet-4-6", smartRoutingEnabled: false })
       .returning();
     res.json(serializeConfig(created));
     return;
@@ -52,8 +75,7 @@ router.put("/settings/ai-provider", async (req, res): Promise<void> => {
     return;
   }
 
-  const { provider, model, apiKey, baseUrl } = parsed;
-
+  const { provider, model, apiKey, baseUrl, smartRoutingEnabled, fallbackProvider, fallbackModel, fallbackApiKey } = parsed;
   const [existing] = await db.select().from(aiProviderConfigTable).limit(1);
 
   const updates: Partial<typeof aiProviderConfigTable.$inferInsert> = {
@@ -62,29 +84,25 @@ router.put("/settings/ai-provider", async (req, res): Promise<void> => {
     updatedAt: new Date(),
   };
 
-  // Only update apiKey if a new value is explicitly provided (not undefined)
-  if (apiKey !== undefined) {
-    updates.apiKey = apiKey ?? null;
-  } else if (existing) {
-    updates.apiKey = existing.apiKey;
-  }
+  // Only update secret fields if a new value was explicitly provided
+  if (apiKey !== undefined) updates.apiKey = apiKey;
+  else if (existing) updates.apiKey = existing.apiKey;
 
-  if (baseUrl !== undefined) {
-    updates.baseUrl = baseUrl ?? null;
-  }
+  if (baseUrl !== undefined) updates.baseUrl = baseUrl;
+  if (smartRoutingEnabled !== undefined) updates.smartRoutingEnabled = smartRoutingEnabled;
+  if (fallbackProvider !== undefined) updates.fallbackProvider = fallbackProvider;
+  if (fallbackModel !== undefined) updates.fallbackModel = fallbackModel;
+  if (fallbackApiKey !== undefined) updates.fallbackApiKey = fallbackApiKey;
+  else if (existing) updates.fallbackApiKey = existing.fallbackApiKey;
 
   let row: typeof aiProviderConfigTable.$inferSelect;
   if (!existing) {
     [row] = await db.insert(aiProviderConfigTable).values(updates as typeof aiProviderConfigTable.$inferInsert).returning();
   } else {
-    [row] = await db
-      .update(aiProviderConfigTable)
-      .set(updates)
-      .where(eq(aiProviderConfigTable.id, existing.id))
-      .returning();
+    [row] = await db.update(aiProviderConfigTable).set(updates).where(eq(aiProviderConfigTable.id, existing.id)).returning();
   }
 
-  req.log.info({ provider, model }, "AI provider config updated");
+  req.log.info({ provider, model, smartRouting: smartRoutingEnabled }, "AI provider config updated");
   res.json(serializeConfig(row));
 });
 

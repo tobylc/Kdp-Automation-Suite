@@ -7,10 +7,12 @@
  */
 
 export * from './aiProviderConfig';
+export * from './aiProviderConfigFallbackProvider';
 export * from './aiProviderConfigProvider';
 export * from './aiProviderInput';
 export * from './aiProviderInputProvider';
 export * from './aiProviderTestResult';
+export * from './aiProviderTestResultFallbackResult';
 export * from './book';
 export * from './bookDetail';
 export * from './bookDetailStatus';

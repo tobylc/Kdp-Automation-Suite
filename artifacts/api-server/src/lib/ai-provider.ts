@@ -1,13 +1,13 @@
 /**
- * AI Provider Abstraction
+ * AI Provider Abstraction — Smart Cascade Router
  *
- * Routes AI vision calls to the user-configured provider:
- *   - anthropic  → Anthropic SDK (Replit integration or user API key)
- *   - openai     → OpenAI SDK (user API key)
- *   - openrouter → OpenAI-compatible SDK pointed at openrouter.ai
+ * Supports three providers: anthropic, openai, openrouter.
+ * When smart routing is enabled, the app tries a cheap/free primary model first.
+ * If it fails (credit error, rate limit, network) OR returns a low-confidence
+ * response, it automatically escalates to the configured fallback model.
  *
- * All providers receive a screenshot + system prompt + user message and
- * return a plain text response string for the caller to parse.
+ * This means free models are tried first; the reliable heavyweight only fires
+ * when actually needed.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -18,7 +18,7 @@ import { logger } from "./logger";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
-// ─── Config helpers ───────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ResolvedAiConfig {
   provider: string;
@@ -26,6 +26,42 @@ export interface ResolvedAiConfig {
   apiKey: string | null;
   baseUrl: string | null;
 }
+
+interface FullConfig {
+  primary: ResolvedAiConfig;
+  fallback: ResolvedAiConfig | null;
+  smartRoutingEnabled: boolean;
+}
+
+// ─── Uncertainty detection ────────────────────────────────────────────────────
+
+const UNCERTAINTY_PHRASES = [
+  "i cannot see",
+  "i can't see",
+  "unable to see",
+  "cannot determine",
+  "can't determine",
+  "not visible",
+  "not sure",
+  "unclear",
+  "i'm not able",
+  "i am not able",
+  "cannot identify",
+  "can't identify",
+  "don't know",
+  "do not know",
+];
+
+/**
+ * Returns true if the AI response text signals uncertainty or inability to act.
+ * Used to decide whether to escalate to the fallback model.
+ */
+function isUncertain(responseText: string): boolean {
+  const lower = responseText.toLowerCase();
+  return UNCERTAINTY_PHRASES.some((phrase) => lower.includes(phrase));
+}
+
+// ─── Config loader ────────────────────────────────────────────────────────────
 
 export async function getAiConfig(): Promise<ResolvedAiConfig> {
   const [row] = await db.select().from(aiProviderConfigTable).limit(1);
@@ -35,9 +71,39 @@ export async function getAiConfig(): Promise<ResolvedAiConfig> {
   return { provider: row.provider, model: row.model, apiKey: row.apiKey ?? null, baseUrl: row.baseUrl ?? null };
 }
 
+async function getFullConfig(): Promise<FullConfig> {
+  const [row] = await db.select().from(aiProviderConfigTable).limit(1);
+  if (!row) {
+    return {
+      primary: { provider: "anthropic", model: "claude-sonnet-4-6", apiKey: null, baseUrl: null },
+      fallback: null,
+      smartRoutingEnabled: false,
+    };
+  }
+
+  const primary: ResolvedAiConfig = {
+    provider: row.provider,
+    model: row.model,
+    apiKey: row.apiKey ?? null,
+    baseUrl: row.baseUrl ?? null,
+  };
+
+  const fallback: ResolvedAiConfig | null =
+    row.smartRoutingEnabled && row.fallbackProvider && row.fallbackModel
+      ? {
+          provider: row.fallbackProvider,
+          model: row.fallbackModel,
+          apiKey: row.fallbackApiKey ?? null,
+          baseUrl: null,
+        }
+      : null;
+
+  return { primary, fallback, smartRoutingEnabled: row.smartRoutingEnabled };
+}
+
 // ─── Provider implementations ─────────────────────────────────────────────────
 
-async function askAnthropic(
+async function callAnthropic(
   config: ResolvedAiConfig,
   screenshotBase64: string,
   systemPrompt: string,
@@ -46,40 +112,32 @@ async function askAnthropic(
   let client: Anthropic;
 
   if (config.apiKey) {
-    client = new Anthropic({
-      apiKey: config.apiKey,
-      baseURL: config.baseUrl ?? undefined,
-    });
+    client = new Anthropic({ apiKey: config.apiKey, baseURL: config.baseUrl ?? undefined });
   } else {
     client = replitAnthropic as unknown as Anthropic;
   }
 
-  const response = await (client as Anthropic).messages.create({
+  // Anthropic requires at least a 1-char image — skip image for empty screenshots (test calls)
+  const contentBlocks: Anthropic.MessageParam["content"] = screenshotBase64
+    ? [
+        { type: "image", source: { type: "base64", media_type: "image/png", data: screenshotBase64 } },
+        { type: "text", text: userMessage },
+      ]
+    : [{ type: "text", text: userMessage }];
+
+  const response = await client.messages.create({
     model: config.model,
     max_tokens: 1024,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: "image/png", data: screenshotBase64 },
-          },
-          { type: "text", text: userMessage },
-        ],
-      },
-    ],
+    system: systemPrompt || undefined,
+    messages: [{ role: "user", content: contentBlocks }],
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text response from Anthropic");
-  }
+  if (!textBlock || textBlock.type !== "text") throw new Error("No text response from Anthropic");
   return textBlock.text;
 }
 
-async function askOpenAiCompat(
+async function callOpenAiCompat(
   config: ResolvedAiConfig,
   screenshotBase64: string,
   systemPrompt: string,
@@ -89,10 +147,7 @@ async function askOpenAiCompat(
     throw new Error(`Provider "${config.provider}" requires an API key. Add one in AI Provider Settings.`);
   }
 
-  const baseURL =
-    config.baseUrl ??
-    (config.provider === "openrouter" ? OPENROUTER_BASE_URL : undefined);
-
+  const baseURL = config.baseUrl ?? (config.provider === "openrouter" ? OPENROUTER_BASE_URL : undefined);
   const client = new OpenAI({ apiKey: config.apiKey, baseURL });
 
   const extraHeaders: Record<string, string> =
@@ -100,24 +155,19 @@ async function askOpenAiCompat(
       ? { "HTTP-Referer": "https://kdp-upload-automation", "X-Title": "KDP Upload Automation" }
       : {};
 
+  const userContent: OpenAI.ChatCompletionContentPart[] = screenshotBase64
+    ? [
+        { type: "image_url", image_url: { url: `data:image/png;base64,${screenshotBase64}` } },
+        { type: "text", text: userMessage },
+      ]
+    : [{ type: "text", text: userMessage }];
+
+  const messages: OpenAI.ChatCompletionMessageParam[] = [];
+  if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
+  messages.push({ role: "user", content: userContent });
+
   const response = await client.chat.completions.create(
-    {
-      model: config.model,
-      max_tokens: 1024,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: `data:image/png;base64,${screenshotBase64}` },
-            },
-            { type: "text", text: userMessage },
-          ],
-        },
-      ],
-    },
+    { model: config.model, max_tokens: 1024, messages },
     { headers: extraHeaders },
   );
 
@@ -126,34 +176,87 @@ async function askOpenAiCompat(
   return text;
 }
 
-// ─── Public entry point ───────────────────────────────────────────────────────
+async function callProvider(
+  config: ResolvedAiConfig,
+  screenshotBase64: string,
+  systemPrompt: string,
+  userMessage: string,
+): Promise<string> {
+  if (config.provider === "anthropic") {
+    return callAnthropic(config, screenshotBase64, systemPrompt, userMessage);
+  }
+  return callOpenAiCompat(config, screenshotBase64, systemPrompt, userMessage);
+}
+
+// ─── Public entry point (with cascade) ───────────────────────────────────────
 
 export async function askAi(
   screenshotBase64: string,
   systemPrompt: string,
   userMessage: string,
 ): Promise<string> {
-  const config = await getAiConfig();
-  logger.info({ provider: config.provider, model: config.model }, "ai-provider: routing request");
+  const { primary, fallback, smartRoutingEnabled } = await getFullConfig();
 
-  if (config.provider === "anthropic") {
-    return askAnthropic(config, screenshotBase64, systemPrompt, userMessage);
+  logger.info(
+    { provider: primary.provider, model: primary.model, smartRouting: smartRoutingEnabled },
+    "ai-provider: routing request",
+  );
+
+  // ── Try primary model ──────────────────────────────────────────────────────
+  let primaryResult: string | null = null;
+  let primaryError: string | null = null;
+
+  try {
+    primaryResult = await callProvider(primary, screenshotBase64, systemPrompt, userMessage);
+  } catch (err) {
+    primaryError = err instanceof Error ? err.message : String(err);
+    logger.warn({ provider: primary.provider, model: primary.model, err: primaryError }, "ai-provider: primary model failed");
   }
-  return askOpenAiCompat(config, screenshotBase64, systemPrompt, userMessage);
+
+  // ── Decide whether to escalate ─────────────────────────────────────────────
+  if (!smartRoutingEnabled || !fallback) {
+    if (primaryError) throw new Error(primaryError);
+    return primaryResult!;
+  }
+
+  const shouldEscalate =
+    primaryError !== null ||
+    (primaryResult !== null && isUncertain(primaryResult));
+
+  if (!shouldEscalate) {
+    logger.info({ model: primary.model }, "ai-provider: primary succeeded, no escalation needed");
+    return primaryResult!;
+  }
+
+  const reason = primaryError ? `primary error: ${primaryError.slice(0, 80)}` : "primary response uncertain";
+  logger.info(
+    { primaryModel: primary.model, fallbackModel: fallback.model, reason },
+    "ai-provider: escalating to fallback model",
+  );
+
+  // ── Try fallback model ─────────────────────────────────────────────────────
+  try {
+    const fallbackResult = await callProvider(fallback, screenshotBase64, systemPrompt, userMessage);
+    logger.info({ model: fallback.model }, "ai-provider: fallback succeeded");
+    return fallbackResult;
+  } catch (fallbackErr) {
+    const fallbackError = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+    logger.error({ primaryError, fallbackError }, "ai-provider: both primary and fallback failed");
+    // Re-throw the original primary error if primary was the one that failed, for cleaner UX
+    throw new Error(primaryError ?? fallbackError);
+  }
 }
 
 // ─── Connection test ──────────────────────────────────────────────────────────
 
-export async function testAiConnection(): Promise<{ success: boolean; message: string; model: string }> {
-  const config = await getAiConfig();
+async function testConfig(config: ResolvedAiConfig): Promise<{ success: boolean; message: string }> {
   try {
     let reply: string;
     if (config.provider === "anthropic") {
-      reply = await askAnthropic(config, "", "Respond with OK.", "Say OK");
+      reply = await callAnthropic(config, "", "Respond with OK.", "Say OK");
     } else {
-      // For vision providers we test without an image
       if (!config.apiKey) {
-        return { success: false, message: "No API key configured", model: config.model };
+        return { success: false, message: "No API key configured" };
       }
       const baseURL = config.baseUrl ?? (config.provider === "openrouter" ? OPENROUTER_BASE_URL : undefined);
       const client = new OpenAI({ apiKey: config.apiKey, baseURL });
@@ -164,9 +267,25 @@ export async function testAiConnection(): Promise<{ success: boolean; message: s
       });
       reply = res.choices[0]?.message?.content ?? "";
     }
-    return { success: true, message: `Connected — model replied: "${reply.trim().slice(0, 60)}"`, model: config.model };
+    return { success: true, message: `Connected — replied: "${reply.trim().slice(0, 60)}"` };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, message: msg, model: config.model };
+    return { success: false, message: err instanceof Error ? err.message : String(err) };
   }
+}
+
+export async function testAiConnection(): Promise<{ success: boolean; message: string; model: string; fallbackResult?: { success: boolean; message: string; model: string } }> {
+  const { primary, fallback } = await getFullConfig();
+  const result = await testConfig(primary);
+
+  const out: { success: boolean; message: string; model: string; fallbackResult?: { success: boolean; message: string; model: string } } = {
+    ...result,
+    model: primary.model,
+  };
+
+  if (fallback) {
+    const fb = await testConfig(fallback);
+    out.fallbackResult = { ...fb, model: fallback.model };
+  }
+
+  return out;
 }

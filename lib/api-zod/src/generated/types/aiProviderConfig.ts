@@ -5,6 +5,7 @@
  * KDP Book Upload Automation API
  * OpenAPI spec version: 0.1.0
  */
+import type { AiProviderConfigFallbackProvider } from './aiProviderConfigFallbackProvider';
 import type { AiProviderConfigProvider } from './aiProviderConfigProvider';
 
 export interface AiProviderConfig {
@@ -15,5 +16,12 @@ export interface AiProviderConfig {
   hasApiKey: boolean;
   /** @nullable */
   baseUrl?: string | null;
+  /** When true, tries primary model first then escalates to fallback on failure or uncertainty */
+  smartRoutingEnabled: boolean;
+  /** @nullable */
+  fallbackProvider?: AiProviderConfigFallbackProvider;
+  /** @nullable */
+  fallbackModel?: string | null;
+  hasFallbackApiKey?: boolean;
   updatedAt: Date;
 }

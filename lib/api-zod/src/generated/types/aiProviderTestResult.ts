@@ -5,9 +5,11 @@
  * KDP Book Upload Automation API
  * OpenAPI spec version: 0.1.0
  */
+import type { AiProviderTestResultFallbackResult } from './aiProviderTestResultFallbackResult';
 
 export interface AiProviderTestResult {
   success: boolean;
   message: string;
   model: string;
+  fallbackResult?: AiProviderTestResultFallbackResult;
 }
