@@ -7,7 +7,7 @@
  */
 
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { askAi } from "./ai-provider";
 import { db, uploadJobsTable, jobLogsTable, booksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
@@ -558,30 +558,9 @@ async function askClaude(
   systemPrompt: string,
   userMessage: string,
 ): Promise<AgentAction> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: "image/png", data: screenshotBase64 },
-          },
-          { type: "text", text: userMessage },
-        ],
-      },
-    ],
-  });
+  let raw = await askAi(screenshotBase64, systemPrompt, userMessage);
+  raw = raw.trim();
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text response from Claude");
-  }
-
-  let raw = textBlock.text.trim();
   // Strip any markdown code fences
   const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) raw = fenceMatch[1].trim();
@@ -592,7 +571,7 @@ async function askClaude(
   try {
     return JSON.parse(raw) as AgentAction;
   } catch {
-    logger.warn({ raw }, "Failed to parse Claude JSON — defaulting to wait");
+    logger.warn({ raw }, "Failed to parse AI JSON — defaulting to wait");
     return { action: "wait", ms: 2000, reasoning: "JSON parse error — waiting" };
   }
 }

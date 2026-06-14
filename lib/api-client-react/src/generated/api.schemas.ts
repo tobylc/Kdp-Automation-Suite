@@ -263,6 +263,53 @@ export interface RunAllResult {
   message: string;
 }
 
+export type AiProviderConfigProvider = typeof AiProviderConfigProvider[keyof typeof AiProviderConfigProvider];
+
+
+export const AiProviderConfigProvider = {
+  anthropic: 'anthropic',
+  openai: 'openai',
+  openrouter: 'openrouter',
+} as const;
+
+export interface AiProviderConfig {
+  id: number;
+  provider: AiProviderConfigProvider;
+  model: string;
+  /** True if an API key is stored (key value is never returned) */
+  hasApiKey: boolean;
+  /** @nullable */
+  baseUrl?: string | null;
+  updatedAt: string;
+}
+
+export type AiProviderInputProvider = typeof AiProviderInputProvider[keyof typeof AiProviderInputProvider];
+
+
+export const AiProviderInputProvider = {
+  anthropic: 'anthropic',
+  openai: 'openai',
+  openrouter: 'openrouter',
+} as const;
+
+export interface AiProviderInput {
+  provider: AiProviderInputProvider;
+  model: string;
+  /**
+     * API key — omit to keep existing key unchanged
+     * @nullable
+     */
+  apiKey?: string | null;
+  /** @nullable */
+  baseUrl?: string | null;
+}
+
+export interface AiProviderTestResult {
+  success: boolean;
+  message: string;
+  model: string;
+}
+
 export interface ScheduleConfig {
   id: number;
   cronExpression: string;

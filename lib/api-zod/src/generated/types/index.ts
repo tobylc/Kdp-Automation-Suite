@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './aiProviderConfig';
+export * from './aiProviderConfigProvider';
+export * from './aiProviderInput';
+export * from './aiProviderInputProvider';
+export * from './aiProviderTestResult';
 export * from './book';
 export * from './bookDetail';
 export * from './bookDetailStatus';

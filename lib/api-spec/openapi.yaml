@@ -20,6 +20,8 @@ tags:
     description: Dashboard statistics
   - name: setup
     description: Local workspace setup
+  - name: settings
+    description: Application settings
 
 paths:
   /healthz:
@@ -208,6 +210,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /settings/ai-provider:
+    get:
+      operationId: getAiProviderConfig
+      tags: [settings]
+      summary: Get current AI provider configuration
+      responses:
+        "200":
+          description: AI provider config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiProviderConfig"
+    put:
+      operationId: updateAiProviderConfig
+      tags: [settings]
+      summary: Update AI provider configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiProviderInput"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiProviderConfig"
+
+  /settings/ai-provider/test:
+    post:
+      operationId: testAiProviderConnection
+      tags: [settings]
+      summary: Test the configured AI provider connection
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiProviderTestResult"
 
   /schedule:
     get:
@@ -497,6 +542,52 @@ components:
         queued:
           type: integer
         message:
+          type: string
+
+    AiProviderConfig:
+      type: object
+      required: [id, provider, model, hasApiKey, updatedAt]
+      properties:
+        id:
+          type: integer
+        provider:
+          type: string
+          enum: [anthropic, openai, openrouter]
+        model:
+          type: string
+        hasApiKey:
+          type: boolean
+          description: True if an API key is stored (key value is never returned)
+        baseUrl:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+          format: date-time
+
+    AiProviderInput:
+      type: object
+      required: [provider, model]
+      properties:
+        provider:
+          type: string
+          enum: [anthropic, openai, openrouter]
+        model:
+          type: string
+        apiKey:
+          type: ["string", "null"]
+          description: API key — omit to keep existing key unchanged
+        baseUrl:
+          type: ["string", "null"]
+
+    AiProviderTestResult:
+      type: object
+      required: [success, message, model]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        model:
           type: string
 
     ScheduleConfig:

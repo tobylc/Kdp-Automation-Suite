@@ -193,6 +193,49 @@ export const RunJobResponse = zod.object({
 
 
 /**
+ * @summary Get current AI provider configuration
+ */
+export const GetAiProviderConfigResponse = zod.object({
+  "id": zod.number(),
+  "provider": zod.enum(['anthropic', 'openai', 'openrouter']),
+  "model": zod.string(),
+  "hasApiKey": zod.boolean().describe('True if an API key is stored (key value is never returned)'),
+  "baseUrl": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update AI provider configuration
+ */
+export const UpdateAiProviderConfigBody = zod.object({
+  "provider": zod.enum(['anthropic', 'openai', 'openrouter']),
+  "model": zod.string(),
+  "apiKey": zod.string().nullish().describe('API key — omit to keep existing key unchanged'),
+  "baseUrl": zod.string().nullish()
+})
+
+export const UpdateAiProviderConfigResponse = zod.object({
+  "id": zod.number(),
+  "provider": zod.enum(['anthropic', 'openai', 'openrouter']),
+  "model": zod.string(),
+  "hasApiKey": zod.boolean().describe('True if an API key is stored (key value is never returned)'),
+  "baseUrl": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Test the configured AI provider connection
+ */
+export const TestAiProviderConnectionResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "model": zod.string()
+})
+
+
+/**
  * @summary Get current cron schedule configuration
  */
 export const GetScheduleResponse = zod.object({

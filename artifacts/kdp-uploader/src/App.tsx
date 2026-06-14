@@ -8,6 +8,7 @@ import BooksPage from "@/pages/books";
 import BookDetailPage from "@/pages/book-detail";
 import JobsPage from "@/pages/jobs";
 import SchedulePage from "@/pages/schedule";
+import AiProviderPage from "@/pages/ai-provider";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ function Router() {
         <Route path="/books/:id" component={BookDetailPage} />
         <Route path="/jobs" component={JobsPage} />
         <Route path="/schedule" component={SchedulePage} />
+        <Route path="/ai-provider" component={AiProviderPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

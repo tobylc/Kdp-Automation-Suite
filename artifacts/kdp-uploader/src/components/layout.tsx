@@ -9,7 +9,7 @@ import {
   SidebarProvider,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, BookOpen, ActivitySquare, CalendarClock } from "lucide-react";
+import { LayoutDashboard, BookOpen, ActivitySquare, CalendarClock, Bot } from "lucide-react";
 import { useHealthCheck } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -60,6 +60,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <Link href="/schedule">
                       <CalendarClock className="h-4 w-4" />
                       <span>Schedule Config</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location === "/ai-provider"}>
+                    <Link href="/ai-provider">
+                      <Bot className="h-4 w-4" />
+                      <span>AI Provider</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
