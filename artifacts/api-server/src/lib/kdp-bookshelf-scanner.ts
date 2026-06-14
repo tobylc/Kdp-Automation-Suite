@@ -153,12 +153,17 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
   const { context } = await getBrowser();
-  const page = await context.newPage();
+
+  // Reuse the already-open KDP bookshelf tab if available
+  const allPages = context.pages();
+  const existingPage = allPages.find((p) => p.url().includes("kdp.amazon.com"));
+  const page = existingPage ?? await context.newPage();
 
   const allEntries: KdpTitleEntry[] = [];
   let pageNum = 0;
 
   try {
+    logger.info({ reusing: !!existingPage, url: page.url() }, "bookshelf-scanner: navigating to bookshelf");
     await page.goto(KDP_BOOKSHELF_URL, { waitUntil: "networkidle", timeout: 30_000 });
     // Give React SPA time to fully render
     await page.waitForTimeout(3000);
