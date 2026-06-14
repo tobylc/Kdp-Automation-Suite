@@ -1,0 +1,72 @@
+[09:29:22.373] INFO (78626): bookshelf-scanner: page extracted
+    pageNum: 113
+    foundOnPage: 24
+    hasNextPage: true
+[09:29:23.361] INFO (78626): bookshelf-scanner: reading page
+    pageNum: 682
+[09:29:23.407] INFO (78626): bookshelf-scanner: DOM extraction result
+    found: 24
+    hasNextPage: true
+    titles: [
+      "Manage title",
+      "Manage title",
+      "Manage title",
+      "Book in the reflective reader",
+      "Manage title",
+      "Book in scripture made simple",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in scripture made simple",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in scripture made simple",
+      "Book in scripture made simple",
+      "bulk update tool",
+      "bulk update tool",
+      "How would you rate your experience using this page?",
+      "How would you rate your experience using this page?"
+    ]
+[09:29:23.407] INFO (78626): bookshelf-scanner: page extracted
+    pageNum: 682
+    foundOnPage: 24
+    hasNextPage: true
+[09:29:24.910] INFO (78626): bookshelf-scanner: reading page
+    pageNum: 114
+[09:29:24.956] INFO (78626): bookshelf-scanner: DOM extraction result
+    found: 24
+    hasNextPage: true
+    titles: [
+      "Manage title",
+      "Manage title",
+      "Manage title",
+      "Book in the reflective reader",
+      "Manage title",
+      "Book in scripture made simple",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in scripture made simple",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in the reflective reader",
+      "Book in scripture made simple",
+      "Book in scripture made simple",
+      "bulk update tool",
+      "bulk update tool",
+      "How would you rate your experience using this page?",
+      "How would you rate your experience using this page?"
+    ]
+[09:29:24.956] INFO (78626): bookshelf-scanner: page extracted
+    pageNum: 114
