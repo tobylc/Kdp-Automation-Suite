@@ -1,0 +1,53 @@
+^C/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/kdp-uploader:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/kdp-uploader@0.0.0 dev: `vite --config vite.config.ts --host 0.0.0.0`
+Command failed with signal "SIGINT"
+
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % pnpm approve-builds
+There are no packages awaiting approval
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % lsof -ti:8080
+68066
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % # Approve esbuild build scripts (one-time fix)
+pnpm approve-builds
+
+# Then restart just the API server
+kill -9 $(lsof -ti:8080) 2>/dev/null; sleep 1; set -a; source artifacts/api-server/.env; set +a && pnpm --filter @workspace/api-server run dev
+zsh: missing end of string
+There are no packages awaiting approval
+zsh: command not found: #
+sh: line 1: 68049 Killed: 9               pnpm run start
+/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/api-server@0.0.0 dev: `export NODE_ENV=development && pnpm run build && pnpm run start`
+Exit status 137
+[1]  + exit 137   pnpm --filter @workspace/api-server run dev
+$ export NODE_ENV=development && pnpm run build && pnpm run start
+$ node ./build.mjs
+
+  dist/index.mjs                       5.5mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                  10.5mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.1kb
+  dist/pino-pretty.mjs.map           204.0kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+
+⚡ Done in 284ms
+$ node --enable-source-maps ./dist/index.mjs
+(node:71024) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:71024) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+[08:29:39.855] INFO (71024): Server listening
+    port: 8080
+[08:29:41.487] INFO (71024): Scheduler started
+    expression: "0 * * * *"
+[08:29:41.487] INFO (71024): Scheduler initialized
+
