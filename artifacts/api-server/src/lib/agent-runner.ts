@@ -17,7 +17,7 @@ import fs from "fs";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const KDP_URL = "https://kdp.amazon.com";
+const KDP_URL = "https://kdp.amazon.com/en_US";
 const MAX_STEPS = 150;
 const SCREENSHOT_DIR = path.resolve(process.cwd(), "artifacts/api-server/uploads/screenshots");
 const SOURCE_BASE = "https://scripturemadesimple.replit.app";
