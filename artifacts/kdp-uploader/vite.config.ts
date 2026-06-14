@@ -66,6 +66,17 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // When running locally (no REPL_ID), proxy /api to the API server on 8080
+    ...(process.env.REPL_ID
+      ? {}
+      : {
+          proxy: {
+            "/api": {
+              target: "http://localhost:8080",
+              changeOrigin: true,
+            },
+          },
+        }),
   },
   preview: {
     port,
