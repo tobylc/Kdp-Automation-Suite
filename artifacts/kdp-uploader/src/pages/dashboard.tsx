@@ -46,7 +46,8 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
       },
       onError: (error) => {
-        toast({ title: "Scan Failed", description: (error as any).error ?? "Scan failed", variant: "destructive" });
+        const msg = (error as any).data?.error ?? (error as any).message ?? "Scan failed";
+        toast({ title: "Scan Failed", description: msg, variant: "destructive" });
       }
     }
   });
@@ -59,7 +60,8 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
       },
       onError: (error) => {
-        toast({ title: "Bookshelf Scan Failed", description: (error as any).error ?? "Scan failed", variant: "destructive" });
+        const msg = (error as any).data?.error ?? (error as any).message ?? "Bookshelf scan failed";
+        toast({ title: "Bookshelf Scan Failed", description: msg, variant: "destructive" });
       }
     }
   });
