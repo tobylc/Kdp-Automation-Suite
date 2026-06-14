@@ -163,13 +163,20 @@ echo ""
 
 echo -e "${BLUE}[5/5]${NC} Starting servers..."
 
-# Open dashboard after servers have a moment to start
-(sleep 6 && open "http://localhost:3000" 2>/dev/null) &
+# Load .env so all child processes inherit DATABASE_URL, API keys, etc.
+set -a
+# shellcheck source=artifacts/api-server/.env
+source "$ENV_FILE"
+set +a
 
-# Start API server in background, frontend in foreground
+# Open dashboard after servers have a moment to start
+(sleep 8 && open "http://localhost:3000" 2>/dev/null) &
+
+# API server — PORT (8080) and DATABASE_URL come from the sourced .env
 pnpm --filter @workspace/api-server run dev &
 API_PID=$!
 
-pnpm --filter @workspace/kdp-uploader run dev
+# Frontend — needs PORT (3000) and BASE_PATH (/), not in .env
+PORT=3000 BASE_PATH=/ pnpm --filter @workspace/kdp-uploader run dev
 
 wait "$API_PID" 2>/dev/null || true
