@@ -1,0 +1,97 @@
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % # Check what version you're on
+git log --oneline -3
+
+# If the top commit isn't "Add smart routing for AI model selection..." then pull:
+git pull origin main
+
+# Then reinstall, migrate DB, and restart fresh
+pnpm install
+pnpm --filter @workspace/db run push
+kill -9 $(lsof -ti:8080) $(lsof -ti:3000) 2>/dev/null; sleep 2; set -a; source artifacts/api-server/.env; set +a && pnpm --filter @workspace/api-server run dev & PORT=3000 BASE_PATH=/ pnpm --filter @workspace/kdp-uploader run dev
+zsh: command not found: #
+remote: Enumerating objects: 82, done.
+remote: Counting objects: 100% (82/82), done.
+remote: Compressing objects: 100% (12/12), done.
+remote: Total 67 (delta 37), reused 67 (delta 37), pack-reused 0 (from 0)
+Unpacking objects: 100% (67/67), 930.30 KiB | 3.22 MiB/s, done.
+From https://github.com/tobylc/Kdp-Automation-Suite
+ * branch            main       -> FETCH_HEAD
+   cb8ae1f..386135e  main       -> origin/main
+Updating 570007f..386135e
+error: Your local changes to the following files would be overwritten by merge:
+	artifacts/api-server/artifacts/api-server/uploads/assets/3/manuscript_6x9.docx
+	artifacts/api-server/artifacts/api-server/uploads/assets/5/manuscript_6x9.docx
+	artifacts/api-server/src/lib/agent-runner.ts
+	artifacts/api-server/src/lib/kdp-bookshelf-scanner.ts
+	artifacts/kdp-uploader/src/pages/dashboard.tsx
+	artifacts/kdp-uploader/vite.config.ts
+	package.json
+	pnpm-lock.yaml
+	pnpm-workspace.yaml
+Please commit your changes or stash them before you merge.
+error: The following untracked working tree files would be overwritten by merge:
+	artifacts/api-server/artifacts/api-server/uploads/assets/10/cover.jpg
+	artifacts/api-server/artifacts/api-server/uploads/assets/10/cover.png
+	artifacts/api-server/artifacts/api-server/uploads/assets/10/manuscript_6x9.docx
+Please move or remove them before you merge.
+Aborting
+zsh: command not found: #
+Scope: all 10 workspace projects
+Already up to date
+Done in 178ms using pnpm v11.1.1
+$ drizzle-kit push --config ./drizzle.config.ts
+Reading config file '/Users/clawd/Desktop/Kdp-Automation-Suite/lib/db/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] Pulling schema from database...
+(node:66371) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+[✓] Pulling schema from database...
+[i] No changes detected
+sh: line 1: 65157 Killed: 9               pnpm run start
+/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/api-server@0.0.0 dev: `export NODE_ENV=development && pnpm run build && pnpm run start`
+Exit status 137
+[1]  + exit 137   pnpm --filter @workspace/api-server run dev
+[1] 66402
+$ vite --config vite.config.ts --host 0.0.0.0
+$ export NODE_ENV=development && pnpm run build && pnpm run start
+
+  VITE v7.3.3  ready in 164 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.5.144:3000/
+  ➜  Network: http://100.99.179.122:3000/
+  ➜  press h + enter to show help
+$ node ./build.mjs
+
+  dist/index.mjs                       4.6mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   7.9mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.1kb
+  dist/pino-pretty.mjs.map           204.0kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+
+⚡ Done in 183ms
+$ node --enable-source-maps ./dist/index.mjs
+(node:66497) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[08:16:11.137] INFO (66497): Server listening
+    port: 8080
+[08:16:12.001] INFO (66497): 
