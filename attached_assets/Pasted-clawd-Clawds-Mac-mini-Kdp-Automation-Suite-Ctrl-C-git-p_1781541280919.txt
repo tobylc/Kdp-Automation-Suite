@@ -1,0 +1,50 @@
+clawd@Clawds-Mac-mini Kdp-Automation-Suite % Ctrl+C
+git pull origin main
+set -a; source artifacts/api-server/.env; set +a && pnpm --filter @workspace/api-server run dev
+zsh: command not found: Ctrl+C
+remote: Enumerating objects: 57, done.
+remote: Counting objects: 100% (57/57), done.
+remote: Compressing objects: 100% (11/11), done.
+remote: Total 35 (delta 20), reused 35 (delta 20), pack-reused 0 (from 0)
+Unpacking objects: 100% (35/35), 615.22 KiB | 3.99 MiB/s, done.
+From https://github.com/tobylc/Kdp-Automation-Suite
+ * branch            main       -> FETCH_HEAD
+   7249584..aaff015  main       -> origin/main
+Updating 78fa658..aaff015
+error: Your local changes to the following files would be overwritten by merge:
+	artifacts/api-server/artifacts/api-server/uploads/assets/1/manuscript_6x9.docx
+	artifacts/api-server/artifacts/api-server/uploads/assets/10/manuscript_6x9.docx
+Please commit your changes or stash them before you merge.
+Aborting
+$ export NODE_ENV=development && pnpm run build && pnpm run start
+$ node ./build.mjs
+
+  dist/index.mjs                       5.5mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                  10.5mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.1kb
+  dist/pino-pretty.mjs.map           204.0kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+
+⚡ Done in 148ms
+$ node --enable-source-maps ./dist/index.mjs
+(node:50321) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:50321) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+[09:34:04.004] INFO (50321): Server listening
+    port: 8080
+[09:34:04.787] INFO (50321): Scheduler started
+    expression: "0 * * * *"
+[09:34:04.787] INFO (50321): Scheduler initialized
+
