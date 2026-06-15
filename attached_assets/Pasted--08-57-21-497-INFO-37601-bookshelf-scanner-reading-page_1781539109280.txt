@@ -1,0 +1,134 @@
+[08:57:21.497] INFO (37601): bookshelf-scanner: reading page
+    pageNum: 1
+    url: "https://kdp.amazon.com/en_US/bookshelf"
+[08:57:21.515] INFO (37601): bookshelf-scanner: DOM extraction result
+    found: 10
+    hasNextPage: true
+    titles: [
+      "Deliverance – Exodus: The Journey from Bondage to Promise",
+      "Astonished By God - Workbook: A Companion Study Guide & Spiritual Formation Workbook",
+      "The Case For Christ: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The King Is Coming: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "18 Days in Heaven: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "You Can Change Your World By Speaking To It: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "Practicing the Way: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The Promise of Heaven: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "ROMANS - Justification: The Heart of the Gospel Unveiled"
+    ]
+[08:57:21.515] INFO (37601): bookshelf-scanner: page extracted
+    pageNum: 1
+    foundOnPage: 10
+    hasNextPage: true
+[08:57:23.087] INFO (37601): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 223
+[08:57:24.108] WARN (37601): bookshelf-scanner: URL unchanged after next-page click — stopping to prevent loop
+    url: "https://kdp.amazon.com/en_US/bookshelf"
+    pageNum: 1
+[08:57:24.353] INFO (37601): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "Deliverance – Exodus: The Journey from Bondage to Promise"
+[08:57:24.428] INFO (37601): bookshelf-scanner: book updated
+    title: "Astonished by God"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[08:57:24.437] INFO (37601): request completed
+    req: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 6
+[08:57:24.504] INFO (37601): bookshelf-scanner: book updated
+    title: "The Case for Christ"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "not_created"
+    newStatus: "partial"
+[08:57:24.578] INFO (37601): bookshelf-scanner: book updated
+    title: "The King Is Coming"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[08:57:24.656] INFO (37601): bookshelf-scanner: book updated
+    title: "18 Days in Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[08:57:24.809] INFO (37601): bookshelf-scanner: book updated
+    title: "You Can Change Your World By Speaking To It"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[08:57:24.809] INFO (37601): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook"
+[08:57:24.883] INFO (37601): bookshelf-scanner: book updated
+    title: "Practicing the Way"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[08:57:24.958] INFO (37601): bookshelf-scanner: book updated
+    title: "The Promise of Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[08:57:24.958] INFO (37601): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "ROMANS - Justification: The Heart of the Gospel Unveiled"
+[08:57:24.959] INFO (37601): KDP bookshelf scan complete
+    scanned: 10
+    updated: 7
+[08:57:24.959] INFO (37601): request completed
+    req: {
+      "id": 20,
+      "method": "POST",
+      "url": "/api/books/bookshelf-scan"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10829
+[08:57:25.186] INFO (37601): request completed
+    req: {
+      "id": 26,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 223
+[08:57:28.449] INFO (37601): request completed
+    req: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 4
+[08:57:30.422] INFO (37601): request completed
+    req: {
+      "id": 28,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
