@@ -1,0 +1,161 @@
+    responseTime: 216
+(node:53814) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+[09:44:49.598] INFO (53814): bookshelf-scanner: scanning page
+    pageNum: 1
+    url: "https://kdp.amazon.com/en_US/bookshelf"
+[09:44:49.615] INFO (53814): bookshelf-scanner: page titles
+    pageNum: 1
+    found: 10
+    titles: [
+      "Deliverance – Exodus: The Journey from Bondage to Promise",
+      "Astonished By God - Workbook: A Companion Study Guide & Spiritual Formation Workbook",
+      "The Case For Christ: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The King Is Coming: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "18 Days in Heaven: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "You Can Change Your World By Speaking To It: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "Practicing the Way: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The Promise of Heaven: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "ROMANS - Justification: The Heart of the Gospel Unveiled"
+    ]
+[09:44:49.769] INFO (53814): ai-provider: routing request
+    provider: "openrouter"
+    model: "google/gemma-4-31b-it:free"
+    smartRouting: true
+[09:44:50.908] INFO (53814): request completed
+    req: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 5
+[09:44:52.367] WARN (53814): ai-provider: primary model failed
+    provider: "openrouter"
+    model: "google/gemma-4-31b-it:free"
+    err: "429 Provider returned error"
+[09:44:52.367] INFO (53814): ai-provider: escalating to fallback model
+    primaryModel: "google/gemma-4-31b-it:free"
+    fallbackModel: "google/gemini-2.5-flash-lite"
+    reason: "primary error: 429 Provider returned error"
+[09:44:52.408] ERROR (53814): ai-provider: both primary and fallback failed
+    primaryError: "429 Provider returned error"
+    fallbackError: "402 This request requires more credits, or fewer max_tokens. You requested up to 1024 tokens, but can only afford 225. To increase, visit https://openrouter.ai/settings/credits and add more credits"
+[09:44:52.408] WARN (53814): bookshelf-scanner: CUA vision call failed — treating as last page
+    err: {
+      "type": "Error",
+      "message": "429 Provider returned error",
+      "stack":
+          Error: 429 Provider returned error
+              at askAi (/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/src/lib/ai-provider.ts:246:11)
+              at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+              at async clickNextWithCua (/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/src/lib/kdp-bookshelf-scanner.ts:237:17)
+              at async scanKdpBookshelf (/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/src/lib/kdp-bookshelf-scanner.ts:300:23)
+              at async <anonymous> (/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/src/routes/books.ts:68:20)
+    }
+[09:44:52.628] INFO (53814): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "Deliverance – Exodus: The Journey from Bondage to Promise"
+[09:44:52.727] INFO (53814): bookshelf-scanner: book updated
+    title: "Astonished by God"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:44:52.803] INFO (53814): bookshelf-scanner: book updated
+    title: "The Case for Christ"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "not_created"
+    newStatus: "partial"
+[09:44:52.877] INFO (53814): bookshelf-scanner: book updated
+    title: "The King Is Coming"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:44:52.950] INFO (53814): bookshelf-scanner: book updated
+    title: "18 Days in Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:44:53.022] INFO (53814): bookshelf-scanner: book updated
+    title: "You Can Change Your World By Speaking To It"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:44:53.022] INFO (53814): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook"
+[09:44:53.092] INFO (53814): bookshelf-scanner: book updated
+    title: "Practicing the Way"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:44:53.250] INFO (53814): bookshelf-scanner: book updated
+    title: "The Promise of Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:44:53.250] INFO (53814): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "ROMANS - Justification: The Heart of the Gospel Unveiled"
+[09:44:53.250] INFO (53814): KDP bookshelf scan complete
+    scanned: 10
+    updated: 7
+    pages: 1
+[09:44:53.251] INFO (53814): request completed
+    req: {
+      "id": 17,
+      "method": "POST",
+      "url": "/api/books/bookshelf-scan"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 8732
+[09:44:53.474] INFO (53814): request completed
+    req: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 215
+[09:44:54.921] INFO (53814): request completed
+    req: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 5
+[09:44:58.699] INFO (53814): request completed
+    req: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 216
+[09:44:58.934] INFO (53814): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 4
+[09:45:02.950] INFO (53814): request completed
+    req: {

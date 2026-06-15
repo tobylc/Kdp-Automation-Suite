@@ -214,12 +214,12 @@ async function getPageFingerprint(page: Page): Promise<string> {
   });
 }
 
-// ─── CUA vision: ask AI to locate and click the Next page button ──────────────
+// ─── CUA vision: ask AI for Next button coordinates ──────────────────────────
 //
 // Uses whatever AI provider is configured in the app (Anthropic, OpenRouter,
 // OpenAI, etc.) via askAi() — no provider hard-coding here.
 
-async function clickNextWithCua(page: Page): Promise<boolean> {
+async function getCuaNextCoords(page: Page): Promise<{ x: number; y: number } | null> {
   const buf = await page.screenshot({ type: "png", fullPage: false });
   const base64 = buf.toString("base64");
 
@@ -236,33 +236,113 @@ No other text. No explanation.`;
   try {
     response = (await askAi(base64, system, userMsg)).trim();
   } catch (err) {
-    logger.warn({ err }, "bookshelf-scanner: CUA vision call failed — treating as last page");
-    return false;
+    logger.warn({ err }, "bookshelf-scanner: CUA vision call failed — will try DOM fallback");
+    return null;
   }
 
   logger.info({ response }, "bookshelf-scanner: CUA pagination response");
+  if (!response.startsWith("CLICK:")) return null;
 
-  if (!response.startsWith("CLICK:")) return false;
-
-  const coords = response.replace("CLICK:", "").split(",");
-  const x = parseInt(coords[0]?.trim(), 10);
-  const y = parseInt(coords[1]?.trim(), 10);
-
+  const parts = response.replace("CLICK:", "").split(",");
+  const x = parseInt(parts[0]?.trim(), 10);
+  const y = parseInt(parts[1]?.trim(), 10);
   if (isNaN(x) || isNaN(y)) {
     logger.warn({ response }, "bookshelf-scanner: CUA gave invalid coordinates");
-    return false;
+    return null;
+  }
+  return { x, y };
+}
+
+// ─── DOM fallback: click Next using selectors ─────────────────────────────────
+
+async function clickNextWithDom(page: Page): Promise<boolean> {
+  // Try href-based navigation first (instant, reliable when available)
+  const nextHref = await page.evaluate((): string | null => {
+    const disabled = (el: Element | null): boolean => {
+      let node: Element | null = el;
+      while (node) {
+        if (node.classList.contains("a-disabled")) return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
+    const candidates: Element[] = [
+      ...Array.from(document.querySelectorAll("ul.a-pagination li.a-last a, .a-pagination li.a-last a")),
+      ...Array.from(document.querySelectorAll('a[aria-label="Go to next page"], a[aria-label="Next page"]')),
+      ...Array.from(document.querySelectorAll("a")).filter(a => /^next(\s+page)?$/i.test((a.textContent || "").trim())),
+    ];
+    for (const el of candidates) {
+      if (!disabled(el)) {
+        const href = (el as HTMLAnchorElement).href;
+        if (href && !href.includes("javascript:")) return href;
+      }
+    }
+    return null;
+  });
+
+  if (nextHref && nextHref !== page.url()) {
+    logger.info({ nextHref }, "bookshelf-scanner: DOM navigating to next page via href");
+    await page.goto(nextHref, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(2000);
+    return true;
   }
 
-  const beforeFingerprint = await getPageFingerprint(page);
-  logger.info({ x, y }, "bookshelf-scanner: CUA clicking Next at coordinates");
-  await page.mouse.click(x, y);
+  // AJAX pagination — click the button and rely on fingerprint detection
+  const selectors = [
+    'ul.a-pagination li.a-last:not(.a-disabled) a',
+    '.a-pagination li.a-last:not(.a-disabled) a',
+    'a[aria-label="Go to next page"]',
+    'a[aria-label="Next page"]',
+    'button[aria-label="Go to next page"]',
+    'a:has-text("Next")',
+    'button:has-text("Next")',
+  ];
+  for (const sel of selectors) {
+    try {
+      const btn = page.locator(sel).first();
+      if (!await btn.isVisible({ timeout: 1000 })) continue;
+      const disabled = await btn.evaluate((el) => {
+        let node: Element | null = el;
+        while (node) {
+          if (node.classList.contains("a-disabled") || node.getAttribute("disabled") !== null) return true;
+          node = node.parentElement;
+        }
+        return false;
+      });
+      if (disabled) continue;
+      logger.info({ selector: sel }, "bookshelf-scanner: DOM clicking Next");
+      await btn.click();
+      return true;
+    } catch { /* try next selector */ }
+  }
+  return false;
+}
 
-  // Wait up to 8s for content to change (AJAX pagination)
+// ─── Combined: CUA first, DOM fallback, fingerprint wait ─────────────────────
+
+async function clickNextAndWait(page: Page): Promise<boolean> {
+  const beforeFingerprint = await getPageFingerprint(page);
+
+  // 1. Try CUA vision (uses app-configured AI provider)
+  const cuaCoords = await getCuaNextCoords(page);
+  if (cuaCoords) {
+    logger.info(cuaCoords, "bookshelf-scanner: CUA clicking Next at coordinates");
+    await page.mouse.click(cuaCoords.x, cuaCoords.y);
+  } else {
+    // 2. DOM fallback (works without AI credits)
+    const domClicked = await clickNextWithDom(page);
+    if (!domClicked) {
+      logger.info("bookshelf-scanner: no Next button found — last page");
+      return false;
+    }
+  }
+
+  // 3. Wait up to 8s for content to change (handles AJAX pagination)
   for (let i = 0; i < 16; i++) {
     await page.waitForTimeout(500);
     const afterFingerprint = await getPageFingerprint(page);
     if (afterFingerprint !== beforeFingerprint) {
-      logger.info({ attempts: i + 1 }, "bookshelf-scanner: content changed after CUA click");
+      logger.info({ attempts: i + 1 }, "bookshelf-scanner: new page content detected");
       return true;
     }
   }
@@ -297,7 +377,7 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
       logger.info({ pageNum, found: entries.length, titles: entries.map(e => e.kdpTitle) }, "bookshelf-scanner: page titles");
       allEntries.push(...entries);
 
-      const hasMore = await clickNextWithCua(page);
+      const hasMore = await clickNextAndWait(page);
       if (!hasMore) break;
     }
 
