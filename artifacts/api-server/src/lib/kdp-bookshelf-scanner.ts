@@ -409,9 +409,22 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
     await page.goto(KDP_BOOKSHELF_URL, { waitUntil: "networkidle", timeout: 30_000 });
     await page.waitForTimeout(3000);
 
-    let hasMorePages = true;
+    // Pagination: drive entirely from Playwright locators — more reliable than DOM eval.
+    // We don't rely on hasNextPage from the page; instead we probe for a clickable Next button.
+    const nextButtonSelectors = [
+      // Amazon standard pagination — the "last" li contains the Next link when not disabled
+      'ul.a-pagination li.a-last:not(.a-disabled) a',
+      '.a-pagination li.a-last:not(.a-disabled) a',
+      // aria-label variants
+      'a[aria-label="Go to next page"]',
+      'a[aria-label="Next page"]',
+      'button[aria-label="Go to next page"]',
+      // text-based (Playwright partial text match)
+      'a:has-text("Next")',
+      'button:has-text("Next")',
+    ];
 
-    while (hasMorePages && pageNum < MAX_PAGES) {
+    while (pageNum < MAX_PAGES) {
       pageNum++;
       const currentUrl = page.url();
       logger.info({ pageNum, url: currentUrl }, "bookshelf-scanner: reading page");
@@ -420,53 +433,53 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
       allEntries.push(...extraction.titles);
 
       logger.info(
-        { pageNum, foundOnPage: extraction.titles.length, hasNextPage: extraction.hasNextPage },
+        { pageNum, foundOnPage: extraction.titles.length, hasNextPage: extraction.hasNextPage, pagination: extraction.paginationHtml },
         "bookshelf-scanner: page extracted",
       );
 
-      if (!extraction.hasNextPage) {
-        hasMorePages = false;
-        break;
-      }
-
-      const nextSelectors = [
-        'li.a-last:not(.a-disabled) a',
-        '.a-pagination .a-last a',
-        'button:has-text("Next")',
-        'a:has-text("Next")',
-        '[aria-label="Next page"]',
-        '[aria-label="Go to next page"]',
-      ];
-
+      // Try each Next-button selector in order
       let clicked = false;
-      for (const sel of nextSelectors) {
+      for (const sel of nextButtonSelectors) {
         try {
           const btn = page.locator(sel).first();
-          if (await btn.isVisible({ timeout: 2000 })) {
-            await btn.click();
-            await page.waitForTimeout(2500);
-            clicked = true;
-            break;
-          }
+          const visible = await btn.isVisible({ timeout: 1500 });
+          if (!visible) continue;
+
+          // Make sure it's not inside a disabled ancestor
+          const isDisabled = await btn.evaluate((el) => {
+            let node: Element | null = el;
+            while (node) {
+              if (
+                node.classList.contains("a-disabled") ||
+                node.getAttribute("disabled") !== null ||
+                node.getAttribute("aria-disabled") === "true"
+              ) return true;
+              node = node.parentElement;
+            }
+            return false;
+          });
+          if (isDisabled) continue;
+
+          logger.info({ selector: sel }, "bookshelf-scanner: clicking next page");
+          await btn.click();
+          await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+          await page.waitForTimeout(1500);
+          clicked = true;
+          break;
         } catch {
-          // selector not found — try next
+          // selector not matched — try next
         }
       }
 
       if (!clicked) {
-        logger.info("bookshelf-scanner: next page reported but no button found — stopping");
-        hasMorePages = false;
+        logger.info({ pageNum }, "bookshelf-scanner: no Next button found — last page reached");
         break;
       }
 
-      // Loop detection: if URL didn't change after clicking next, we're stuck
+      // Loop guard: stop if URL didn't change (JS pagination that failed)
       const newUrl = page.url();
       if (newUrl === currentUrl) {
-        logger.warn(
-          { url: newUrl, pageNum },
-          "bookshelf-scanner: URL unchanged after next-page click — stopping to prevent loop"
-        );
-        hasMorePages = false;
+        logger.warn({ pageNum }, "bookshelf-scanner: URL unchanged after Next click — stopping");
         break;
       }
       lastUrl = newUrl;
