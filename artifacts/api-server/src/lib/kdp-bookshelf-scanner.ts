@@ -193,8 +193,8 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
 
   try {
     logger.info({ reusing: !!existingPage }, "bookshelf-scanner: navigating to bookshelf");
-    await page.goto(KDP_BOOKSHELF_URL, { waitUntil: "networkidle", timeout: 30_000 });
-    await page.waitForTimeout(2000);
+    await page.goto(KDP_BOOKSHELF_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(3000);
 
     while (pageNum < MAX_PAGES) {
       pageNum++;
@@ -226,8 +226,8 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
       }
 
       // Navigate directly — much more reliable than clicking
-      await page.goto(nextUrl, { waitUntil: "networkidle", timeout: 30_000 });
-      await page.waitForTimeout(1500);
+      await page.goto(nextUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForTimeout(2000);
     }
 
     if (pageNum >= MAX_PAGES) {
