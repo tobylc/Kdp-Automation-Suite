@@ -1,0 +1,114 @@
+    responseTime: 5
+[09:24:37.482] WARN (45734): bookshelf-scanner: URL unchanged after next-page click — stopping to prevent loop
+    url: "https://kdp.amazon.com/en_US/bookshelf"
+    pageNum: 1
+[09:24:37.641] INFO (45734): request completed
+    req: {
+      "id": 68,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 230
+[09:24:38.167] INFO (45734): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "Deliverance – Exodus: The Journey from Bondage to Promise"
+[09:24:38.243] INFO (45734): bookshelf-scanner: book updated
+    title: "Astonished by God"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:24:38.317] INFO (45734): bookshelf-scanner: book updated
+    title: "The Case for Christ"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "not_created"
+    newStatus: "partial"
+[09:24:38.475] INFO (45734): bookshelf-scanner: book updated
+    title: "The King Is Coming"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:24:38.552] INFO (45734): bookshelf-scanner: book updated
+    title: "18 Days in Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:24:38.625] INFO (45734): bookshelf-scanner: book updated
+    title: "You Can Change Your World By Speaking To It"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:24:38.625] INFO (45734): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook"
+[09:24:38.696] INFO (45734): bookshelf-scanner: book updated
+    title: "Practicing the Way"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:24:38.768] INFO (45734): bookshelf-scanner: book updated
+    title: "The Promise of Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:24:38.769] INFO (45734): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "ROMANS - Justification: The Heart of the Gospel Unveiled"
+[09:24:38.769] INFO (45734): KDP bookshelf scan complete
+    scanned: 10
+    updated: 7
+[09:24:38.769] INFO (45734): request completed
+    req: {
+      "id": 62,
+      "method": "POST",
+      "url": "/api/books/bookshelf-scan"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 10242
+[09:24:39.074] INFO (45734): request completed
+    req: {
+      "id": 69,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 298
+[09:24:41.025] INFO (45734): request completed
+    req: {
+      "id": 70,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 6
+[09:24:44.385] INFO (45734): request completed
+    req: {
+      "id": 71,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 302
+[09:24:45.036] INFO (45734): request completed
+    req: {
+      "id": 72,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }

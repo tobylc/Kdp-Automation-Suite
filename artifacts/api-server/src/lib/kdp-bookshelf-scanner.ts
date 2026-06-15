@@ -7,6 +7,7 @@
  */
 
 import { getBrowser } from "./agent-runner";
+import { askAi } from "./ai-provider";
 import { db, booksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
@@ -194,11 +195,9 @@ async function extractTitlesFromDom(page: Page): Promise<KdpTitleEntry[]> {
 
 async function getPageFingerprint(page: Page): Promise<string> {
   return page.evaluate((): string => {
-    // Capture the first few book titles visible — changes when Next is clicked
     const links = Array.from(document.querySelectorAll("a, button")).filter(
       el => el.textContent?.trim().toLowerCase() === "manage title"
     );
-    // Walk up to find containers and grab their first heading-like text
     const snippets: string[] = [];
     for (const link of links.slice(0, 3)) {
       let el: Element | null = link.parentElement;
@@ -215,84 +214,55 @@ async function getPageFingerprint(page: Page): Promise<string> {
   });
 }
 
-// ─── Click Next and wait for content to change ─────────────────────────────────
+// ─── CUA vision: ask AI to locate and click the Next page button ──────────────
+//
+// Uses whatever AI provider is configured in the app (Anthropic, OpenRouter,
+// OpenAI, etc.) via askAi() — no provider hard-coding here.
 
-async function clickNextAndWait(page: Page): Promise<boolean> {
-  const beforeFingerprint = await getPageFingerprint(page);
+async function clickNextWithCua(page: Page): Promise<boolean> {
+  const buf = await page.screenshot({ type: "png", fullPage: false });
+  const base64 = buf.toString("base64");
 
-  // Try each Next-button selector
-  const selectors = [
-    'ul.a-pagination li.a-last:not(.a-disabled) a',
-    '.a-pagination li.a-last:not(.a-disabled) a',
-    'a[aria-label="Go to next page"]',
-    'a[aria-label="Next page"]',
-    'button[aria-label="Go to next page"]',
-    'a:has-text("Next")',
-    'button:has-text("Next")',
-  ];
+  const system = `You are a browser automation assistant. Look at this screenshot of the Amazon KDP bookshelf page.
+Your ONLY job is to locate a clickable "Next page" or "Next" pagination button.
+Respond with EXACTLY one of:
+  CLICK:x,y   — if a Next page button is visible and NOT greyed out/disabled (x,y = pixel coordinates to click)
+  NO_NEXT     — if there is no Next button, or it is greyed out / disabled / on the last page
+No other text. No explanation.`;
 
-  // Also try extracting href and navigating directly (for href-based pagination)
-  const nextHref = await page.evaluate((): string | null => {
-    const lastLi = document.querySelector("ul.a-pagination li.a-last, .a-pagination li.a-last");
-    if (lastLi && !lastLi.classList.contains("a-disabled")) {
-      const a = lastLi.querySelector("a");
-      if (a) return (a as HTMLAnchorElement).href;
-    }
-    const ariaNext = document.querySelector<HTMLAnchorElement>('a[aria-label="Go to next page"], a[aria-label="Next page"]');
-    if (ariaNext && !ariaNext.closest(".a-disabled")) return ariaNext.href;
-    const allLinks = Array.from(document.querySelectorAll("a"));
-    for (const link of allLinks) {
-      const t = (link.textContent || "").trim().toLowerCase();
-      if ((t === "next" || t === "next page") && !link.closest(".a-disabled")) {
-        return (link as HTMLAnchorElement).href;
-      }
-    }
-    return null;
-  });
+  const userMsg = "Is there a clickable Next page button? If yes, give me the pixel coordinates. If no or disabled, say NO_NEXT.";
 
-  if (nextHref && nextHref !== page.url()) {
-    // URL-based pagination — navigate directly
-    logger.info({ nextHref }, "bookshelf-scanner: navigating to next page via href");
-    await page.goto(nextHref, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    await page.waitForTimeout(2000);
-    return true;
-  }
-
-  // AJAX-based pagination — click and wait for content to change
-  let clicked = false;
-  for (const sel of selectors) {
-    try {
-      const btn = page.locator(sel).first();
-      if (!await btn.isVisible({ timeout: 1500 })) continue;
-
-      const isDisabled = await btn.evaluate((el) => {
-        let node: Element | null = el;
-        while (node) {
-          if (node.classList.contains("a-disabled") || node.getAttribute("disabled") !== null) return true;
-          node = node.parentElement;
-        }
-        return false;
-      });
-      if (isDisabled) continue;
-
-      logger.info({ selector: sel }, "bookshelf-scanner: clicking next page");
-      await btn.click();
-      clicked = true;
-      break;
-    } catch { /* try next */ }
-  }
-
-  if (!clicked) {
-    logger.info("bookshelf-scanner: no Next button found — last page");
+  let response: string;
+  try {
+    response = (await askAi(base64, system, userMsg)).trim();
+  } catch (err) {
+    logger.warn({ err }, "bookshelf-scanner: CUA vision call failed — treating as last page");
     return false;
   }
 
-  // Wait up to 8 seconds for the content to change (AJAX pagination)
+  logger.info({ response }, "bookshelf-scanner: CUA pagination response");
+
+  if (!response.startsWith("CLICK:")) return false;
+
+  const coords = response.replace("CLICK:", "").split(",");
+  const x = parseInt(coords[0]?.trim(), 10);
+  const y = parseInt(coords[1]?.trim(), 10);
+
+  if (isNaN(x) || isNaN(y)) {
+    logger.warn({ response }, "bookshelf-scanner: CUA gave invalid coordinates");
+    return false;
+  }
+
+  const beforeFingerprint = await getPageFingerprint(page);
+  logger.info({ x, y }, "bookshelf-scanner: CUA clicking Next at coordinates");
+  await page.mouse.click(x, y);
+
+  // Wait up to 8s for content to change (AJAX pagination)
   for (let i = 0; i < 16; i++) {
     await page.waitForTimeout(500);
     const afterFingerprint = await getPageFingerprint(page);
     if (afterFingerprint !== beforeFingerprint) {
-      logger.info({ attempts: i + 1 }, "bookshelf-scanner: content changed after Next click");
+      logger.info({ attempts: i + 1 }, "bookshelf-scanner: content changed after CUA click");
       return true;
     }
   }
@@ -327,7 +297,7 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
       logger.info({ pageNum, found: entries.length, titles: entries.map(e => e.kdpTitle) }, "bookshelf-scanner: page titles");
       allEntries.push(...entries);
 
-      const hasMore = await clickNextAndWait(page);
+      const hasMore = await clickNextWithCua(page);
       if (!hasMore) break;
     }
 
