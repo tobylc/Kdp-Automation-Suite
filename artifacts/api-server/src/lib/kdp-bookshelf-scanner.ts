@@ -191,27 +191,12 @@ async function extractTitlesFromDom(page: Page): Promise<KdpTitleEntry[]> {
   }));
 }
 
-// ─── Page fingerprint — detects when AJAX pagination loads new content ─────────
+// ─── Title snapshot — used to detect when AJAX pagination loads new content ────
+// Extracts just the first book title visible — changes when Next page loads.
 
-async function getPageFingerprint(page: Page): Promise<string> {
-  return page.evaluate((): string => {
-    const links = Array.from(document.querySelectorAll("a, button")).filter(
-      el => el.textContent?.trim().toLowerCase() === "manage title"
-    );
-    const snippets: string[] = [];
-    for (const link of links.slice(0, 3)) {
-      let el: Element | null = link.parentElement;
-      while (el && el !== document.body) {
-        const t = el.textContent || "";
-        if (t.includes("Kindle") || t.includes("Paperback")) {
-          const heading = el.querySelector("h1,h2,h3,h4,[class*=title i]");
-          if (heading?.textContent) { snippets.push(heading.textContent.trim().slice(0, 60)); break; }
-        }
-        el = el.parentElement;
-      }
-    }
-    return snippets.join("||") || document.title;
-  });
+async function getFirstTitle(page: Page): Promise<string> {
+  const entries = await extractTitlesFromDom(page);
+  return entries[0]?.kdpTitle ?? "";
 }
 
 // ─── CUA vision: ask AI for Next button coordinates ──────────────────────────
@@ -324,11 +309,9 @@ async function clickNextWithDom(page: Page): Promise<boolean> {
   return false;
 }
 
-// ─── Combined: CUA first, DOM fallback, fingerprint wait ─────────────────────
+// ─── Combined: CUA first, DOM fallback, title-change wait ────────────────────
 
-async function clickNextAndWait(page: Page): Promise<boolean> {
-  const beforeFingerprint = await getPageFingerprint(page);
-
+async function clickNextAndWait(page: Page, currentFirstTitle: string): Promise<boolean> {
   // 1. Try CUA vision (uses app-configured AI provider)
   const cuaCoords = await getCuaNextCoords(page);
   if (cuaCoords) {
@@ -343,17 +326,19 @@ async function clickNextAndWait(page: Page): Promise<boolean> {
     }
   }
 
-  // 3. Wait up to 8s for content to change (handles AJAX pagination)
-  for (let i = 0; i < 16; i++) {
+  // 3. Wait up to 10s for the first book title to change.
+  //    Uses extractTitlesFromDom (already proven to work) instead of a
+  //    separate fingerprint that can match static UI labels.
+  for (let i = 0; i < 20; i++) {
     await page.waitForTimeout(500);
-    const afterFingerprint = await getPageFingerprint(page);
-    if (afterFingerprint !== beforeFingerprint) {
-      logger.info({ attempts: i + 1 }, "bookshelf-scanner: new page content detected");
+    const newFirstTitle = await getFirstTitle(page);
+    if (newFirstTitle && newFirstTitle !== currentFirstTitle) {
+      logger.info({ attempts: i + 1, newFirstTitle }, "bookshelf-scanner: new page content detected");
       return true;
     }
   }
 
-  logger.warn("bookshelf-scanner: content unchanged after 8s — assuming last page");
+  logger.warn({ currentFirstTitle }, "bookshelf-scanner: first title unchanged after 10s — assuming last page");
   return false;
 }
 
@@ -383,7 +368,7 @@ export async function scanKdpBookshelf(): Promise<BookshelfScanResult> {
       logger.info({ pageNum, found: entries.length, titles: entries.map(e => e.kdpTitle) }, "bookshelf-scanner: page titles");
       allEntries.push(...entries);
 
-      const hasMore = await clickNextAndWait(page);
+      const hasMore = await clickNextAndWait(page, entries[0]?.kdpTitle ?? "");
       if (!hasMore) break;
     }
 
