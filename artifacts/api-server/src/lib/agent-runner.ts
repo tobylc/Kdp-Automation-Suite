@@ -456,9 +456,21 @@ Paperback details are usually carried over from the eBook. Preserve all carried-
 ## FORMAT: Hardcover
 Price: $19.999 USD (use 19.999 not 19.99 — avoids derived marketplace validation errors)
 
-### START CONDITION
-- From Bookshelf: locate same title row → click "+ Create hardcover" (or "Continue setup" if draft exists)
-- VISION VERIFY: page is Hardcover Details, progress tracker shows Hardcover Details → Content → Pricing
+### START CONDITION — READ CAREFULLY BEFORE ACTING
+This book ALREADY EXISTS on KDP as an eBook and Paperback. You are ADDING a Hardcover format to the existing title — NOT creating a new book.
+
+⚠️ DO NOT click any "Create", "+ Create new title or series", or "Create new title" button. That creates a completely separate new book unrelated to the existing one. This is WRONG.
+
+CORRECT sequence from the Bookshelf:
+1. Scroll the bookshelf to find the row that contains "${bookTitle}"
+2. On that specific title's row, look for one of these — they appear as buttons or links WITHIN the title row, NOT at the top of the page:
+   - A button labeled "Create hardcover" or "+ Create hardcover"
+   - An ellipsis "..." or three-dots menu button → which reveals a "Create hardcover" option
+   - A button labeled "Continue setup" (if a hardcover draft was already started)
+3. Click that per-row hardcover button
+4. VISION VERIFY: page now shows the Hardcover Details form with progress tracker "Hardcover Details → Content → Pricing"
+
+If you cannot see "${bookTitle}" in the visible rows, scroll down — the bookshelf may have many titles.
 
 ### PAGE 1 — HARDCOVER DETAILS
 Details are usually carried over from paperback/eBook. Preserve unless KDP shows validation error.
@@ -598,6 +610,9 @@ async function executeAction(
       } else {
         await humanClick(activePage, target);
       }
+      // Wait for any navigation triggered by this click to settle before the next screenshot
+      await activePage.waitForLoadState("domcontentloaded", { timeout: 8000 }).catch(() => {});
+      await activePage.waitForTimeout(randomDelay(500, 1000));
       break;
     }
 
