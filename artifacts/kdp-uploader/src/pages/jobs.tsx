@@ -30,7 +30,7 @@ export default function JobsPage() {
   if (formatFilter !== "all") queryParams.format = formatFilter;
 
   const { data: jobs, isLoading } = useListJobs(queryParams, {
-    query: { refetchInterval: 3000 }
+    query: { refetchInterval: 3000 } as any
   });
 
   return (

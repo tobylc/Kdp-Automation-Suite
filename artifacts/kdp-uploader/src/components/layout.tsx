@@ -14,7 +14,7 @@ import { useHealthCheck } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { data: health } = useHealthCheck({ query: { refetchInterval: 30000 } });
+  const { data: health } = useHealthCheck({ query: { refetchInterval: 30000 } } as any);
 
   return (
     <SidebarProvider>

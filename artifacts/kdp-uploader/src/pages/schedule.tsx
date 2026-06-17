@@ -33,7 +33,7 @@ export default function SchedulePage() {
         queryClient.invalidateQueries({ queryKey: getGetScheduleQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Update Failed", description: err.error, variant: "destructive" });
+        toast({ title: "Update Failed", description: (err as any).error ?? err.message, variant: "destructive" });
       }
     }
   });

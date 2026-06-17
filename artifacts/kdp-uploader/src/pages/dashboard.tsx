@@ -26,7 +26,7 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   const { data: stats } = useGetStats({
-    query: { refetchInterval: 5000 }
+    query: { refetchInterval: 5000 } as any
   });
 
   const { data: schedule } = useGetSchedule();
@@ -35,7 +35,7 @@ export default function Dashboard() {
   
   const { data: recentJobs } = useListJobs(
     { limit: 10 },
-    { query: { refetchInterval: hasRunningJobs ? 2000 : false } }
+    { query: { refetchInterval: hasRunningJobs ? 2000 : false } as any }
   );
 
   const scanMutation = useScanForBooks({

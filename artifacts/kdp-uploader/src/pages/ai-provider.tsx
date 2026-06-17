@@ -33,19 +33,27 @@ const PROVIDERS = [
     description: "Single key — Claude, GPT-4o, Gemini, Llama, free tier models. Best for smart routing.",
     docsUrl: "https://openrouter.ai/keys",
     models: [
-      { id: "google/gemma-4-31b-it:free", label: "Google: Gemma 4 31B (free, vision)" },
-      { id: "google/gemma-4-26b-a4b-it:free", label: "Google: Gemma 4 26B A4B (free, vision)" },
-      { id: "nvidia/nemotron-nano-12b-v2-vl:free", label: "NVIDIA: Nemotron Nano 12B 2 VL (free, vision)" },
-      { id: "google/gemini-2.5-flash-lite", label: "Google: Gemini 2.5 Flash Lite (~$0.10/M, fast)" },
-      { id: "qwen/qwen3-vl-32b-instruct", label: "Qwen: Qwen3 VL 32B Instruct (~$0.10/M, vision)" },
-      { id: "openai/gpt-4o-mini", label: "OpenAI: GPT-4o-mini (~$0.15/M, vision)" },
-      { id: "meta-llama/llama-4-maverick", label: "Meta: Llama 4 Maverick (~$0.15/M, vision)" },
-      { id: "google/gemini-2.5-flash", label: "Google: Gemini 2.5 Flash (~$0.30/M, excellent vision)" },
-      { id: "anthropic/claude-3-haiku", label: "Anthropic: Claude 3 Haiku (~$0.25/M, reliable)" },
-      { id: "anthropic/claude-3.5-haiku", label: "Anthropic: Claude 3.5 Haiku (~$0.80/M, reliable)" },
-      { id: "openai/gpt-4.1-mini", label: "OpenAI: GPT-4.1 Mini (~$0.40/M, vision)" },
-      { id: "openai/gpt-4o", label: "OpenAI: GPT-4o (~$2.50/M, premium vision)" },
-      { id: "anthropic/claude-sonnet-4.5", label: "Anthropic: Claude Sonnet 4.5 (~$3/M, best fallback)" },
+      // ── Free tier (vision-capable) ──────────────────────────────────────
+      { id: "google/gemma-4-31b-it:free",       label: "Google: Gemma 4 31B — free, vision" },
+      { id: "google/gemma-4-26b-a4b-it:free",   label: "Google: Gemma 4 26B A4B — free, vision" },
+      { id: "nvidia/nemotron-nano-12b-v2-vl:free", label: "NVIDIA: Nemotron Nano 12B VL — free, vision" },
+      // ── Google Gemini ───────────────────────────────────────────────────
+      { id: "google/gemini-2.5-flash-lite",     label: "Google: Gemini 2.5 Flash Lite — ~$0.10/M, fast vision ✓" },
+      { id: "google/gemini-2.5-flash",          label: "Google: Gemini 2.5 Flash — ~$0.30/M, excellent vision ✓" },
+      { id: "google/gemini-2.5-pro",            label: "Google: Gemini 2.5 Pro — ~$1.25/M, best Google vision" },
+      // ── OpenAI ─────────────────────────────────────────────────────────
+      { id: "openai/gpt-4o-mini",               label: "OpenAI: GPT-4o mini — ~$0.15/M, vision" },
+      { id: "openai/gpt-4.1-mini",              label: "OpenAI: GPT-4.1 mini — ~$0.40/M, vision" },
+      { id: "openai/gpt-4o",                    label: "OpenAI: GPT-4o — ~$2.50/M, premium vision ✓" },
+      { id: "openai/gpt-4.1",                   label: "OpenAI: GPT-4.1 — ~$2/M, vision" },
+      // ── Meta Llama ──────────────────────────────────────────────────────
+      { id: "meta-llama/llama-4-maverick",      label: "Meta: Llama 4 Maverick — ~$0.15/M, vision" },
+      { id: "meta-llama/llama-4-scout",         label: "Meta: Llama 4 Scout — ~$0.08/M, vision" },
+      // ── Anthropic ───────────────────────────────────────────────────────
+      { id: "anthropic/claude-3-haiku",         label: "Anthropic: Claude 3 Haiku — ~$0.25/M, reliable" },
+      { id: "anthropic/claude-3.5-haiku",       label: "Anthropic: Claude 3.5 Haiku — ~$0.80/M, reliable" },
+      { id: "anthropic/claude-3.5-sonnet",      label: "Anthropic: Claude 3.5 Sonnet — ~$3/M, best vision" },
+      { id: "anthropic/claude-sonnet-4-5",      label: "Anthropic: Claude Sonnet 4.5 — ~$3/M, latest" },
     ],
   },
   {
@@ -374,9 +382,9 @@ export default function AiProviderPage() {
         {smartRoutingEnabled && (
           <CardContent className="space-y-5 border-t pt-5">
             <div className="p-3 rounded-lg bg-amber-100/60 border border-amber-200 text-xs text-amber-900 space-y-1">
-              <p><strong>Suggested setup for zero cost:</strong></p>
-              <p>Primary → <code>google/gemini-2.0-flash-001</code> via OpenRouter (free tier, supports vision)</p>
-              <p>Fallback → <code>anthropic/claude-sonnet-4-5</code> via OpenRouter or direct Anthropic (fires only when primary fails)</p>
+              <p><strong>Suggested setup (low cost):</strong></p>
+              <p>Primary → <code>google/gemini-2.5-flash-lite</code> via OpenRouter (~$0.10/M, confirmed working)</p>
+              <p>Fallback → <code>openai/gpt-4o</code> via OpenRouter (~$2.50/M, fires only when primary fails)</p>
             </div>
 
             <div className="space-y-1.5">
@@ -474,7 +482,7 @@ export default function AiProviderPage() {
         <CardContent className="space-y-2 text-xs text-muted-foreground">
           <p><strong className="text-foreground">Book discovery &amp; shelf scan</strong> — already free (HTML scraping, no AI).</p>
           <p><strong className="text-foreground">KDP upload agent</strong> — the only AI cost. Vision required for every step.</p>
-          <p><strong className="text-foreground">Recommended free setup</strong> — Primary: <code>google/gemini-2.0-flash-001</code> (OpenRouter free tier). Fallback: <code>anthropic/claude-sonnet-4-5</code> (fires only on failure/uncertainty). Estimated cost: ~$0 for successful runs.</p>
+          <p><strong className="text-foreground">Recommended low-cost setup</strong> — Primary: <code>google/gemini-2.5-flash-lite</code> (OpenRouter, ~$0.10/M, confirmed working). Fallback: <code>openai/gpt-4o</code> (fires only on failure/uncertainty). Estimated cost: ~$0.01–0.05 per book upload.</p>
           <p><strong className="text-foreground">OpenRouter</strong> — <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openrouter.ai</a> — one key, hundreds of models, free tiers available.</p>
         </CardContent>
       </Card>

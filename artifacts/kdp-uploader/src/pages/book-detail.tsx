@@ -11,7 +11,7 @@ import { ArrowLeft, ExternalLink, FileText, Image as ImageIcon, Play, FileJson, 
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { UploadJobDetail } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { UploadJobDetail } from "@workspace/api-client-react";
 
 export default function BookDetailPage() {
   const [, params] = useRoute("/books/:id");
@@ -20,7 +20,7 @@ export default function BookDetailPage() {
   const { toast } = useToast();
 
   const { data: book, isLoading } = useGetBook(id, {
-    query: { enabled: !!id, refetchInterval: 3000 } // Poll to keep jobs updated
+    query: { enabled: !!id, refetchInterval: 3000 } as any // Poll to keep jobs updated
   });
 
   const runJobMutation = useRunJob({
@@ -32,7 +32,7 @@ export default function BookDetailPage() {
         queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Error", description: err.error, variant: "destructive" });
+        toast({ title: "Error", description: (err as any).error ?? err.message, variant: "destructive" });
       }
     }
   });
