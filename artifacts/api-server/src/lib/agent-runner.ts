@@ -810,6 +810,8 @@ export async function runUploadJob(jobId: number): Promise<void> {
     let stepNumber = 0;
     let isComplete = false;
     let isStopped = false;
+    let consecutiveAiErrors = 0;
+    const MAX_CONSECUTIVE_AI_ERRORS = 3;
 
     while (stepNumber < MAX_STEPS && !isComplete && !isStopped) {
       stepNumber++;
@@ -844,9 +846,21 @@ export async function runUploadJob(jobId: number): Promise<void> {
       let action: AgentAction;
       try {
         action = await askClaude(base64, systemPrompt, userMsg);
+        consecutiveAiErrors = 0; // reset on success
       } catch (err) {
+        consecutiveAiErrors++;
         const msg = err instanceof Error ? err.message : String(err);
-        await addLog(jobId, "warn", `Step ${stepNumber}: Claude API error: ${msg} — waiting 5s`);
+        await addLog(jobId, "warn", `Step ${stepNumber}: AI API error (${consecutiveAiErrors}/${MAX_CONSECUTIVE_AI_ERRORS}): ${msg}`);
+
+        if (consecutiveAiErrors >= MAX_CONSECUTIVE_AI_ERRORS) {
+          throw new Error(
+            `AI provider failed ${MAX_CONSECUTIVE_AI_ERRORS} consecutive times — ` +
+            `last error: ${msg}. ` +
+            `Check AI provider settings (insufficient credits or rate limit). ` +
+            `Go to Settings → AI Provider and ensure your API key/credits are valid.`,
+          );
+        }
+
         await page.waitForTimeout(5000);
         continue;
       }
