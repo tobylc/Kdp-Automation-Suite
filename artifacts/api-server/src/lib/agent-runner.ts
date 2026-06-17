@@ -592,6 +592,32 @@ async function askClaude(
   }
 }
 
+// ─── Cursor indicator (injected into page DOM so user can see agent activity) ──
+
+async function showCursorIndicator(page: Page, x: number, y: number): Promise<void> {
+  await page.evaluate(({ cx, cy }: { cx: number; cy: number }) => {
+    const el = document.createElement("div");
+    el.id = "__kdp_agent_cursor__";
+    el.style.cssText = [
+      "position:fixed",
+      `left:${cx - 16}px`,
+      `top:${cy - 16}px`,
+      "width:32px",
+      "height:32px",
+      "border:3px solid #1a73e8",
+      "border-radius:50%",
+      "background:rgba(26,115,232,0.25)",
+      "z-index:2147483647",
+      "pointer-events:none",
+      "transition:opacity 0.6s ease",
+      "box-shadow:0 0 0 2px #fff",
+    ].join(";");
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; }, 700);
+    setTimeout(() => { el.remove(); }, 1400);
+  }, { cx: x, cy: y }).catch(() => {});
+}
+
 // ─── Action executor ──────────────────────────────────────────────────────────
 
 async function executeAction(
@@ -600,13 +626,17 @@ async function executeAction(
   context: BrowserContext,
 ): Promise<{ activePage: Page }> {
   let activePage = page;
+  // Snapshot page count BEFORE this action so we can detect newly-opened tabs
+  const pageCountBefore = context.pages().length;
 
   switch (action.action) {
     case "click": {
       const target = action.coordinates ?? action.selector ?? action.label_text;
       if (!target) break;
       if (typeof target === "object") {
-        await humanClick(activePage, target as { x: number; y: number });
+        const { x, y } = target as { x: number; y: number };
+        await showCursorIndicator(activePage, x, y);
+        await humanClick(activePage, { x, y });
       } else {
         await humanClick(activePage, target);
       }
@@ -709,15 +739,14 @@ async function executeAction(
       break;
   }
 
-  // After any action, check if a new page/tab opened (e.g. Print Previewer)
-  // and switch to it if it's the most recently opened page
-  const pages = context.pages();
-  if (pages.length > 1) {
-    // Use the last opened page as the active one
-    const newestPage = pages[pages.length - 1];
-    if (newestPage !== activePage && !newestPage.isClosed()) {
-      // Wait briefly for the new page to load
-      await newestPage.waitForLoadState("domcontentloaded").catch(() => {});
+  // Only switch tabs if this action caused a NEW tab to open (e.g. Print Previewer).
+  // DO NOT switch just because the user already had multiple Chrome tabs open —
+  // that was the original bug that sent all actions to the wrong page.
+  const pagesAfter = context.pages();
+  if (pagesAfter.length > pageCountBefore) {
+    const newestPage = pagesAfter[pagesAfter.length - 1];
+    if (!newestPage.isClosed()) {
+      await newestPage.waitForLoadState("domcontentloaded", { timeout: 10000 }).catch(() => {});
       activePage = newestPage;
     }
   }

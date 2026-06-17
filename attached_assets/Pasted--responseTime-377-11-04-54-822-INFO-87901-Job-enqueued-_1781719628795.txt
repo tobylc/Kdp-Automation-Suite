@@ -1,0 +1,372 @@
+   }
+    responseTime: 377
+[11:04:54.822] INFO (87901): Job enqueued
+    jobId: 9
+    queueDepth: 1
+[11:04:54.822] INFO (87901): Starting upload job (serial queue)
+    jobId: 9
+[11:04:54.900] INFO (87901): request completed
+    req: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/jobs/9/run"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 316
+[11:04:55.281] INFO (87901): Downloading asset
+    url: "https://scripturemadesimple.replit.app/download/23/6x9"
+    destPath: "/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/artifacts/api-server/uploads/assets/3/manuscript_6x9.docx"
+    label: "manuscript"
+[11:04:55.289] INFO (87901): Downloading asset
+    url: "https://scripturemadesimple.replit.app/download-uploaded-cover/23/png"
+    destPath: "/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/artifacts/api-server/uploads/assets/3/cover.png"
+    label: "cover.png"
+[11:04:55.290] INFO (87901): Downloading asset
+    url: "https://scripturemadesimple.replit.app/download-uploaded-cover/23/jpg"
+    destPath: "/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/artifacts/api-server/uploads/assets/3/cover.jpg"
+    label: "cover.jpg"
+[11:04:55.882] INFO (87901): request completed
+    req: {
+      "id": 10,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 976
+[11:04:56.981] INFO (87901): Asset downloaded
+    destPath: "/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/artifacts/api-server/uploads/assets/3/manuscript_6x9.docx"
+    bytes: 62657
+    label: "manuscript"
+[11:04:59.282] INFO (87901): request completed
+    req: {
+      "id": 11,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 388
+[11:04:59.428] INFO (87901): Asset downloaded
+    destPath: "/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/artifacts/api-server/uploads/assets/3/cover.jpg"
+    bytes: 3508268
+    label: "cover.jpg"
+[11:05:02.691] INFO (87901): request completed
+    req: {
+      "id": 12,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 401
+[11:05:06.068] INFO (87901): request completed
+    req: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 371
+[11:05:09.508] INFO (87901): request completed
+    req: {
+      "id": 14,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 432
+[11:05:12.888] INFO (87901): request completed
+    req: {
+      "id": 15,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 372
+[11:05:16.325] INFO (87901): request completed
+    req: {
+      "id": 16,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 430
+[11:05:16.757] INFO (87901): request completed
+    req: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/healthz"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1
+[11:05:19.710] INFO (87901): request completed
+    req: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 377
+[11:05:20.678] INFO (87901): Asset downloaded
+    destPath: "/Users/clawd/Desktop/Kdp-Automation-Suite/artifacts/api-server/artifacts/api-server/uploads/assets/3/cover.png"
+    bytes: 17064218
+    label: "cover.png"
+[11:05:20.753] INFO (87901): Connecting to existing Chrome via CDP
+    cdpEndpoint: "http://localhost:9222"
+[11:05:21.167] INFO (87901): CDP connection established
+[11:05:21.167] INFO (87901): Reusing existing Chrome context (CDP mode)
+    openPages: 2
+[11:05:23.140] INFO (87901): request completed
+    req: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 423
+(node:87901) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+[11:05:25.748] INFO (87901): ai-provider: routing request
+    provider: "openrouter"
+    model: "google/gemini-2.5-flash-lite"
+    smartRouting: true
+[11:05:26.519] INFO (87901): request completed
+    req: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 372
+[11:05:28.086] INFO (87901): ai-provider: escalating to fallback model
+    primaryModel: "google/gemini-2.5-flash-lite"
+    fallbackModel: "openai/gpt-4o-mini"
+    reason: "primary response uncertain"
+[11:05:29.963] INFO (87901): request completed
+    req: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 434
+[11:05:32.598] INFO (87901): ai-provider: fallback succeeded
+    model: "openai/gpt-4o-mini"
+[11:05:32.670] INFO (87901): Agent action
+    jobId: 9
+    step: 1
+    action: "scroll"
+    reasoning: "To locate the specific title 'The Case for Christ' in the bookshelf."
+[11:05:33.338] INFO (87901): request completed
+    req: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 368
+[11:05:36.774] INFO (87901): request completed
+    req: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 429
+[11:05:40.162] INFO (87901): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 378
+[11:06:10.192] INFO (87901): request completed
+    req: {
+      "id": 26,
+      "method": "GET",
+      "url": "/api/healthz"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 0
+[11:06:11.071] INFO (87901): request completed
+    req: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 880
+[11:06:14.523] INFO (87901): request completed
+    req: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 443
+[11:06:17.904] INFO (87901): request completed
+    req: {
+      "id": 28,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 373
+[11:06:21.332] INFO (87901): request completed
+    req: {
+      "id": 29,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 420
+[11:06:24.705] INFO (87901): request completed
+    req: {
+      "id": 30,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 365
+[11:06:28.152] INFO (87901): request completed
+    req: {
+      "id": 31,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 438
+[11:06:31.529] INFO (87901): request completed
+    req: {
+      "id": 32,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 370
+[11:06:34.971] INFO (87901): request completed
+    req: {
+      "id": 33,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 436
+[11:06:38.346] INFO (87901): request completed
+    req: {
+      "id": 34,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 367
+[11:06:40.201] INFO (87901): request completed
+    req: {
+      "id": 35,
+      "method": "GET",
+      "url": "/api/healthz"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1
+[11:06:41.783] INFO (87901): request completed
+    req: {
+      "id": 36,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 428
+[11:06:45.159] INFO (87901): request completed
+    req: {
+      "id": 37,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 367
+[11:06:48.606] INFO (87901): request completed
+    req: {
+      "id": 38,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 438
+[11:06:51.985] INFO (87901): request completed
+    req: {
+      "id": 39,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 369
+[11:06:55.415] INFO (87901): request completed
+    req: {
+      "id": 40,
+      "method": "GET",
+      "url": "/api/books/3"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 423
