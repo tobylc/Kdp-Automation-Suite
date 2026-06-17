@@ -220,6 +220,9 @@ async function getPageFingerprint(page: Page): Promise<string> {
 // OpenAI, etc.) via askAi() — no provider hard-coding here.
 
 async function getCuaNextCoords(page: Page): Promise<{ x: number; y: number } | null> {
+  // Scroll to bottom so the pagination bar is visible in the viewport screenshot
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(600);
   const buf = await page.screenshot({ type: "png", fullPage: false });
   const base64 = buf.toString("base64");
 
@@ -280,7 +283,10 @@ async function clickNextWithDom(page: Page): Promise<boolean> {
     return null;
   });
 
-  if (nextHref && nextHref !== page.url()) {
+  // Only use goto() for real URL changes — not hash-only anchors like #next
+  const currentBase = page.url().split("#")[0];
+  const nextBase = nextHref ? nextHref.split("#")[0] : "";
+  if (nextHref && nextBase !== currentBase) {
     logger.info({ nextHref }, "bookshelf-scanner: DOM navigating to next page via href");
     await page.goto(nextHref, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(2000);

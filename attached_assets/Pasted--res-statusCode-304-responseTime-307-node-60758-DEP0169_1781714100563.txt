@@ -1,0 +1,241 @@
+   res: {
+      "statusCode": 304
+    }
+    responseTime: 307
+(node:60758) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+[09:33:06.315] INFO (60758): request completed
+    req: {
+      "id": 17,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 7
+[09:33:06.605] INFO (60758): bookshelf-scanner: scanning page
+    pageNum: 1
+    url: "https://kdp.amazon.com/en_US/bookshelf"
+[09:33:06.624] INFO (60758): bookshelf-scanner: page titles
+    pageNum: 1
+    found: 10
+    titles: [
+      "Deliverance – Exodus: The Journey from Bondage to Promise",
+      "Astonished By God - Workbook: A Companion Study Guide & Spiritual Formation Workbook",
+      "The Case For Christ: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The King Is Coming: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "18 Days in Heaven: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "You Can Change Your World By Speaking To It: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "Practicing the Way: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "The Promise of Heaven: An Independent Companion Study Guide & Spiritual Formation Workbook",
+      "ROMANS - Justification: The Heart of the Gospel Unveiled"
+    ]
+[09:33:06.783] INFO (60758): ai-provider: routing request
+    provider: "openrouter"
+    model: "google/gemma-4-31b-it:free"
+    smartRouting: true
+[09:33:09.126] WARN (60758): ai-provider: primary model failed
+    provider: "openrouter"
+    model: "google/gemma-4-31b-it:free"
+    err: "429 Provider returned error"
+[09:33:09.127] INFO (60758): ai-provider: escalating to fallback model
+    primaryModel: "google/gemma-4-31b-it:free"
+    fallbackModel: "google/gemini-2.5-flash-lite"
+    reason: "primary error: 429 Provider returned error"
+[09:33:09.247] INFO (60758): request completed
+    req: {
+      "id": 18,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 314
+[09:33:09.980] INFO (60758): ai-provider: fallback succeeded
+    model: "google/gemini-2.5-flash-lite"
+[09:33:09.980] INFO (60758): bookshelf-scanner: CUA pagination response
+    response: "NO_NEXT"
+[09:33:09.985] INFO (60758): bookshelf-scanner: DOM navigating to next page via href
+    nextHref: "https://kdp.amazon.com/en_US/bookshelf#next"
+[09:33:10.330] INFO (60758): request completed
+    req: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 7
+[09:33:14.349] INFO (60758): request completed
+    req: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 11
+[09:33:14.557] INFO (60758): request completed
+    req: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 302
+[09:33:18.363] INFO (60758): request completed
+    req: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 6
+[09:33:19.802] INFO (60758): request completed
+    req: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 237
+[09:33:20.110] WARN (60758): bookshelf-scanner: content unchanged after 8s — assuming last page
+[09:33:20.343] INFO (60758): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "Deliverance – Exodus: The Journey from Bondage to Promise"
+[09:33:20.422] INFO (60758): bookshelf-scanner: book updated
+    title: "Astonished by God"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:33:20.498] INFO (60758): bookshelf-scanner: book updated
+    title: "The Case for Christ"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "not_created"
+    newStatus: "partial"
+[09:33:20.631] INFO (60758): bookshelf-scanner: book updated
+    title: "The King Is Coming"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:33:20.710] INFO (60758): bookshelf-scanner: book updated
+    title: "18 Days in Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:33:20.785] INFO (60758): bookshelf-scanner: book updated
+    title: "You Can Change Your World By Speaking To It"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:33:20.785] INFO (60758): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "The Jesus Discoveries: An Independent Companion Study Guide & Spiritual Formation Workbook"
+[09:33:20.861] INFO (60758): bookshelf-scanner: book updated
+    title: "Practicing the Way"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:33:20.938] INFO (60758): bookshelf-scanner: book updated
+    title: "The Promise of Heaven"
+    ebook: "live"
+    paperback: "live"
+    hardcover: "live"
+    newStatus: "live"
+[09:33:20.938] INFO (60758): bookshelf-scanner: no DB match — skipping
+    kdpTitle: "ROMANS - Justification: The Heart of the Gospel Unveiled"
+[09:33:20.938] INFO (60758): KDP bookshelf scan complete
+    scanned: 10
+    updated: 7
+    pages: 1
+[09:33:20.939] INFO (60758): request completed
+    req: {
+      "id": 14,
+      "method": "POST",
+      "url": "/api/books/bookshelf-scan"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 19856
+[09:33:21.238] INFO (60758): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 294
+[09:33:22.372] INFO (60758): request completed
+    req: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 3
+[09:33:26.384] INFO (60758): request completed
+    req: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 5
+[09:33:26.549] INFO (60758): request completed
+    req: {
+      "id": 26,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 302
+[09:33:28.299] INFO (60758): request completed
+    req: {
+      "id": 28,
+      "method": "GET",
+      "url": "/api/healthz"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1
+[09:33:30.398] INFO (60758): request completed
+    req: {
+      "id": 29,
+      "method": "GET",
+      "url": "/api/setup/status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 6
+[09:33:31.867] INFO (60758): request completed
+    req: {
+      "id": 30,
+      "method": "GET",
+      "url": "/api/stats"
+    }
+    res: {
