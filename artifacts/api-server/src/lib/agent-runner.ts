@@ -352,6 +352,10 @@ ${kdp.keywords ?? "(not available)"}
 ## FORMAT: Kindle eBook
 Price: $2.99 USD | Royalty: 70% | Enroll KDP Select
 
+### START CONDITION
+- From Bookshelf: click the "Create" button (top-right or center of page) → select "Kindle eBook"
+- VISION VERIFY: page shows Kindle eBook Details form with progress tracker (Details → Content → Pricing)
+
 ### PAGE 1 — KINDLE DETAILS (complete in strict section order)
 Complete each section in this EXACT order, vision-verify after each one before moving to the next:
 
@@ -788,9 +792,11 @@ export async function runUploadJob(jobId: number): Promise<void> {
   let page = existingKdpPage ?? await context.newPage();
 
   try {
-    // 7. Navigate to KDP
+    // 7. Navigate to KDP bookshelf — the correct starting point for all formats.
+    //    The system prompt for each format instructs the agent how to proceed from here
+    //    (e.g. "Create new title" for ebook/paperback, "+ Create hardcover" for hardcover).
     await addLog(jobId, "info", existingKdpPage ? "Reusing existing KDP tab" : "Opening new KDP tab");
-    await page.goto(`${KDP_URL}/title-setup/dashboard`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(`${KDP_URL}/bookshelf`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(randomDelay(1000, 2000));
 
     let ssUrl = await takeScreenshot(page, jobId, "start");
